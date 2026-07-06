@@ -4,6 +4,7 @@ import {
   ConnectScreen,
   LobbyScreen,
   GameScreen,
+  LeaderboardScreen,
 } from "./screens";
 import type {
   ClientMessage,
@@ -20,6 +21,7 @@ export default function App() {
   const [savedName, setSavedName] = useState(() => {
     return localStorage.getItem("quickeye_player_name") || "";
   });
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   // Auto-save player name to localStorage
   const handleNameChange = (name: string) => {
@@ -87,6 +89,15 @@ export default function App() {
     );
   }
 
+  // Show leaderboard overlay if requested
+  if (showLeaderboard) {
+    return (
+      <div className="container">
+        <LeaderboardScreen onClose={() => setShowLeaderboard(false)} />
+      </div>
+    );
+  }
+
   if (!game.state) {
     return (
       <div className="container">
@@ -116,6 +127,7 @@ export default function App() {
             } as ClientMessage);
           }}
           isHost={false}
+          onShowLeaderboard={() => setShowLeaderboard(true)}
         />
       </div>
     );
@@ -140,6 +152,7 @@ export default function App() {
             } as ClientMessage);
           }}
           isHost={isHost}
+          onShowLeaderboard={() => setShowLeaderboard(true)}
         />
       </div>
     );

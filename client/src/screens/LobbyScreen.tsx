@@ -10,6 +10,7 @@ interface LobbyScreenProps {
   onJoinGame: (gameId: string, playerName: string) => void;
   onStartGame: () => void;
   isHost: boolean;
+  onShowLeaderboard?: () => void;
 }
 
 export function LobbyScreen({
@@ -20,6 +21,7 @@ export function LobbyScreen({
   onJoinGame,
   onStartGame,
   isHost,
+  onShowLeaderboard,
 }: LobbyScreenProps) {
   const [joinCode, setJoinCode] = useState("");
   const [inputName, setInputName] = useState(playerName || "");
@@ -66,6 +68,9 @@ export function LobbyScreen({
             <button onClick={() => setMode("create")}>Create New Room</button>
             <button onClick={() => setMode("join")}>Join with Code</button>
           </div>
+          <button className="leaderboard-btn" onClick={onShowLeaderboard}>
+            View Leaderboard
+          </button>
         </div>
       );
     }

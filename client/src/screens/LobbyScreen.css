@@ -298,3 +298,30 @@
   font-weight: 700;
   text-transform: uppercase;
 }
+
+.leaderboard-btn {
+  background: var(--color-yellow);
+  color: var(--color-fg);
+  padding: 1rem;
+  font-size: 1rem;
+  border: var(--border-width) solid var(--color-fg);
+  cursor: pointer;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: var(--shadow-md);
+  transition: all 200ms ease-out;
+  font-family: 'Outfit', sans-serif;
+  margin-top: 1rem;
+}
+
+.leaderboard-btn:hover {
+  background: #D4A800;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.leaderboard-btn:active {
+  transform: translateY(2px);
+  box-shadow: 2px 2px 0px 0px #121212;
+}
