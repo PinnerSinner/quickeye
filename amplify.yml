@@ -4,6 +4,7 @@ frontend:
     preBuild:
       commands:
         - npm ci
+        - npm -w shared run build
     build:
       commands:
         - npm -w client run build
