@@ -5,12 +5,14 @@ import {
   LobbyScreen,
   GameScreen,
   LeaderboardScreen,
+  GameModeScreen,
 } from "./screens";
 import type {
   ClientMessage,
   JoinedMessage,
   StateUpdateMessage,
   MatchResultMessage,
+  GameMode,
 } from "@quickeye/shared";
 import "./App.css";
 
@@ -22,6 +24,8 @@ export default function App() {
     return localStorage.getItem("quickeye_player_name") || "";
   });
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showGameModeSelection, setShowGameModeSelection] = useState(false);
+  const [pendingCreateGameName, setPendingCreateGameName] = useState<string | null>(null);
 
   // Auto-save player name to localStorage
   const handleNameChange = (name: string) => {
@@ -98,6 +102,32 @@ export default function App() {
     );
   }
 
+  // Show game mode selection if creating a new game
+  if (showGameModeSelection) {
+    return (
+      <div className="container">
+        <GameModeScreen
+          onSelectMode={(mode: GameMode) => {
+            game.setGameMode(mode);
+            setShowGameModeSelection(false);
+            if (pendingCreateGameName) {
+              game.setPlayerName(pendingCreateGameName);
+              ws.send({
+                action: "createGame",
+                playerName: pendingCreateGameName,
+              } as ClientMessage);
+              setPendingCreateGameName(null);
+            }
+          }}
+          onCancel={() => {
+            setShowGameModeSelection(false);
+            setPendingCreateGameName(null);
+          }}
+        />
+      </div>
+    );
+  }
+
   if (!game.state) {
     return (
       <div className="container">
@@ -106,11 +136,8 @@ export default function App() {
           playerId={game.playerId || ""}
           playerName={game.playerName}
           onCreateGame={(name) => {
-            game.setPlayerName(name);
-            ws.send({
-              action: "createGame",
-              playerName: name,
-            } as ClientMessage);
+            setPendingCreateGameName(name);
+            setShowGameModeSelection(true);
           }}
           onJoinGame={(gameId, name) => {
             game.setPlayerName(name);

@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import type { GameState, Player } from "@quickeye/shared";
+import type { GameState, Player, GameMode } from "@quickeye/shared";
 
 interface UseGameState {
   gameId: string | null;
@@ -7,6 +7,7 @@ interface UseGameState {
   playerName: string;
   state: GameState | null;
   error: string | null;
+  gameMode: GameMode;
 }
 
 interface UseGameMethods {
@@ -15,6 +16,7 @@ interface UseGameMethods {
   setPlayerName: (name: string) => void;
   setState: (state: GameState) => void;
   setError: (error: string | null) => void;
+  setGameMode: (mode: GameMode) => void;
   clear: () => void;
 }
 
@@ -24,6 +26,7 @@ export function useGame(): UseGameState & UseGameMethods {
   const [playerName, setPlayerName] = useState("");
   const [state, setState] = useState<GameState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [gameMode, setGameMode] = useState<GameMode>("time-attack-60");
 
   const clear = useCallback(() => {
     setGameId(null);
@@ -44,6 +47,8 @@ export function useGame(): UseGameState & UseGameMethods {
     setState,
     error,
     setError,
+    gameMode,
+    setGameMode,
     clear,
   };
 }
