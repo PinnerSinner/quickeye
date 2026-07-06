@@ -30,11 +30,13 @@ export default function App() {
       const m = msg as JoinedMessage;
       game.setGameId(m.gameId);
       game.setPlayerId(m.playerId);
+      console.log("Joined game:", m.gameId, "state:", m.state);
       game.setState(m.state);
     });
 
     const unsubStateUpdate = ws.on("stateUpdate", (msg: any) => {
       const m = msg as StateUpdateMessage;
+      console.log("State update:", m.state);
       game.setState(m.state);
     });
 

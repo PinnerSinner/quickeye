@@ -25,17 +25,36 @@ export function GameScreen({
   const [matchingSymbolId, setMatchingSymbolId] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
+  // Debug logging
   useEffect(() => {
-    if (centerCardId !== null && playerCardId !== null && playerCardId !== undefined) {
+    console.log("GameScreen state:", {
+      centerCardId,
+      playerCardId,
+      playerCount: state.players.length,
+      status: state.status,
+    });
+  }, [centerCardId, playerCardId, state.players.length, state.status]);
+
+  useEffect(() => {
+    if (
+      centerCardId !== null &&
+      centerCardId !== undefined &&
+      playerCardId !== null &&
+      playerCardId !== undefined
+    ) {
       const symbolId = findMatchingSymbol(centerCardId, playerCardId);
       setMatchingSymbolId(symbolId);
     }
   }, [centerCardId, playerCardId]);
 
-  const centerSymbols = centerCardId !== null ? getCardSymbols(centerCardId) : [];
-  const playerSymbols = playerCardId !== null && playerCardId !== undefined
-    ? getCardSymbols(playerCardId)
-    : [];
+  const centerSymbols =
+    centerCardId !== null && centerCardId !== undefined
+      ? getCardSymbols(centerCardId)
+      : [];
+  const playerSymbols =
+    playerCardId !== null && playerCardId !== undefined
+      ? getCardSymbols(playerCardId)
+      : [];
 
   const handleSymbolClick = (symbolId: number) => {
     if (submitted) return;
