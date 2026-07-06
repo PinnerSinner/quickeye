@@ -1,0 +1,25 @@
+{
+  "name": "@quickeye/infra",
+  "version": "0.1.0",
+  "description": "AWS CDK stack for Quickeye (WebSocket API, Lambda, DynamoDB)",
+  "private": true,
+  "bin": { "quickeye": "bin/quickeye.js" },
+  "scripts": {
+    "build": "tsc",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy",
+    "diff": "cdk diff",
+    "destroy": "cdk destroy"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.130.0",
+    "constructs": "^10.3.0"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.130.0",
+    "esbuild": "^0.20.0",
+    "@types/node": "^20.11.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0"
+  }
+}

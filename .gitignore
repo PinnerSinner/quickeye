@@ -5,3 +5,8 @@ build/
 .env
 .env.local
 .DS_Store
+
+# CDK
+infra/cdk.out/
+cdk.out/
+*.js.map
