@@ -1,0 +1,11 @@
+{
+  "name": "@quickeye/shared",
+  "version": "0.1.0",
+  "description": "Shared game logic: deck generation, match validation",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  }
+}
