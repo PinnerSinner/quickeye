@@ -17,10 +17,11 @@
   background: var(--color-yellow);
   border: var(--border-width) solid var(--color-fg);
   z-index: -1;
+  display: none;
 }
 
 .lobby-screen h1 {
-  color: var(--color-fg);
+  color: var(--color-white);
   font-size: clamp(2rem, 10vw, 3.5rem);
   font-weight: 900;
   text-transform: uppercase;

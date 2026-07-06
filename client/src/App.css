@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&display=swap');
 
 :root {
-  --color-bg: #1a1a1a;
+  --color-bg: #000000;
   --color-fg: #121212;
   --color-red: #D02020;
   --color-blue: #1040C0;
@@ -51,7 +51,7 @@ body {
 }
 
 h1 {
-  color: var(--color-fg);
+  color: var(--color-white);
   margin-bottom: 2rem;
   font-size: clamp(2rem, 10vw, 4rem);
   font-weight: 900;
