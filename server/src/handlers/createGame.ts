@@ -27,6 +27,7 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
   try {
     const body = JSON.parse(event.body ?? "{}") as CreateGameMessage;
     const playerName = (body.playerName ?? "").trim() || "Player";
+    const gameMode = body.gameMode ?? "time-attack-60";
 
     // Find an unused room code (retry a few times on the rare collision).
     let gameId = generateRoomCode();
@@ -50,6 +51,7 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
       players: [host],
       centerCardId: null,
       drawPile: [],
+      gameMode,
       createdAt: Math.floor(Date.now() / 1000),
       ttl: ttlFromNow(GAME_CONFIG.gameTtlHours),
     };

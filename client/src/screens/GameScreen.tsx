@@ -28,7 +28,16 @@ export function GameScreen({
 
   const [matchingSymbolId, setMatchingSymbolId] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(30);
+
+  // Get max time based on game mode
+  const getMaxTime = () => {
+    const mode = state.gameMode;
+    if (mode === "time-attack-60") return 60;
+    return 999999; // No timer for 10-rounds and difficulty-scaling
+  };
+
+  const maxTime = getMaxTime();
+  const [timeRemaining, setTimeRemaining] = useState(maxTime);
 
   // Debug logging
   useEffect(() => {
@@ -48,7 +57,7 @@ export function GameScreen({
 
   // Timer countdown
   useEffect(() => {
-    if (state.status !== "playing") return;
+    if (state.status !== "playing" || maxTime === 999999) return;
 
     const interval = setInterval(() => {
       setTimeRemaining((prev) => {
@@ -61,7 +70,7 @@ export function GameScreen({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [state.status]);
+  }, [state.status, maxTime]);
 
   // Detect when time runs out and show game over
   useEffect(() => {
@@ -91,13 +100,11 @@ export function GameScreen({
     setTimeout(() => setSubmitted(false), 1000);
   };
 
-  // Calculate scale factor based on time remaining (0-30s)
-  // At 30s (start): scale = 1.0
-  // At 15s (half): scale = 0.95
-  // At 0s (end): scale = 0.7
+  // Calculate scale factor based on time remaining
+  // Only applies to time-attack mode; other modes have no shrinking
   const getSymbolScale = () => {
-    const maxTime = 30;
-    const scale = Math.max(0.7, 1 - (maxTime - timeRemaining) * 0.01);
+    if (maxTime === 999999) return 1.0; // No shrinking for unlimited-time modes
+    const scale = Math.max(0.7, 1 - (maxTime - timeRemaining) * (0.3 / maxTime));
     return scale;
   };
 

@@ -19,6 +19,7 @@ import type { GameState, GameMode, LeaderboardEntry } from "./gameTypes";
 export interface CreateGameMessage {
   action: "createGame";
   playerName: string;
+  gameMode?: GameMode;
 }
 
 export interface JoinGameMessage {
@@ -46,12 +47,17 @@ export interface QueryLeaderboardMessage {
   limit?: number;
 }
 
+export interface QueryGamesMessage {
+  action: "queryGames";
+}
+
 export type ClientMessage =
   | CreateGameMessage
   | JoinGameMessage
   | StartGameMessage
   | SubmitMatchMessage
-  | QueryLeaderboardMessage;
+  | QueryLeaderboardMessage
+  | QueryGamesMessage;
 
 export type ClientAction = ClientMessage["action"];
 
@@ -101,9 +107,21 @@ export interface LeaderboardMessage {
   entries: LeaderboardEntry[];
 }
 
+/** List of available lobby games. */
+export interface GamesListMessage {
+  type: "gamesList";
+  games: {
+    gameId: string;
+    host: string;
+    playerCount: number;
+    gameMode: GameMode;
+  }[];
+}
+
 export type ServerMessage =
   | JoinedMessage
   | StateUpdateMessage
   | MatchResultMessage
   | ErrorMessage
-  | LeaderboardMessage;
+  | LeaderboardMessage
+  | GamesListMessage;

@@ -1,6 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { GameState } from "@quickeye/shared";
 import "./LobbyScreen.css";
+
+interface GameSummary {
+  gameId: string;
+  host: string;
+  playerCount: number;
+  gameMode: string;
+}
 
 interface LobbyScreenProps {
   state: GameState | null;
@@ -11,6 +18,10 @@ interface LobbyScreenProps {
   onStartGame: () => void;
   isHost: boolean;
   onShowLeaderboard?: () => void;
+  ws?: {
+    send: (msg: any) => void;
+    on: (event: string, handler: (msg: any) => void) => () => void;
+  };
 }
 
 export function LobbyScreen({
@@ -22,19 +33,27 @@ export function LobbyScreen({
   onStartGame,
   isHost,
   onShowLeaderboard,
+  ws,
 }: LobbyScreenProps) {
   const [joinCode, setJoinCode] = useState("");
   const [inputName, setInputName] = useState(playerName || "");
   const [mode, setMode] = useState<"choose" | "create" | "join" | "browse">(
     "choose"
   );
+  const [availableGames, setAvailableGames] = useState<GameSummary[]>([]);
 
-  // Mock available games (TODO: fetch from server)
-  const mockAvailableGames = [
-    { gameId: "QCKE", playerCount: 1, host: "Alice" },
-    { gameId: "WZYX", playerCount: 2, host: "Bob" },
-    { gameId: "MNOP", playerCount: 1, host: "Charlie" },
-  ];
+  // Query available games when browse mode is active
+  useEffect(() => {
+    if (!ws || mode !== "browse") return;
+
+    const unsubscribe = ws.on("gamesList", (msg: any) => {
+      setAvailableGames(msg.games || []);
+    });
+
+    ws.send({ action: "queryGames" });
+
+    return unsubscribe;
+  }, [mode, ws]);
 
   const handleCreate = () => {
     if (!inputName.trim()) {
@@ -80,10 +99,10 @@ export function LobbyScreen({
         <div className="lobby-screen">
           <h1>Available Games</h1>
           <div className="games-list">
-            {mockAvailableGames.length === 0 ? (
-              <p style={{ color: "#999" }}>No games available</p>
+            {availableGames.length === 0 ? (
+              <p style={{ color: "var(--color-fg)", fontWeight: 600 }}>No games available. Create one!</p>
             ) : (
-              mockAvailableGames.map((game) => (
+              availableGames.map((game) => (
                 <div
                   key={game.gameId}
                   className="game-card"
@@ -107,9 +126,6 @@ export function LobbyScreen({
           <button className="secondary" onClick={() => setMode("choose")}>
             Back
           </button>
-          <p style={{ fontSize: "0.85rem", color: "#999", marginTop: "1rem" }}>
-            💡 Tip: Real game list coming soon!
-          </p>
         </div>
       );
     }

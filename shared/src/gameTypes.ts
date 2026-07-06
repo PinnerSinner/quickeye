@@ -57,6 +57,8 @@ export interface GameState {
    * which ids remain rather than storing symbol arrays.
    */
   drawPile: number[];
+  /** Game mode determines scoring and timing rules. */
+  gameMode: GameMode;
   createdAt: number;
   /** Epoch seconds after which DynamoDB auto-deletes this row (abandoned games). */
   ttl: number;

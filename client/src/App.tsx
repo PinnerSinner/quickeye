@@ -121,6 +121,7 @@ export default function App() {
               ws.send({
                 action: "createGame",
                 playerName: pendingCreateGameName,
+                gameMode: mode,
               } as ClientMessage);
               setPendingCreateGameName(null);
             }
@@ -161,6 +162,7 @@ export default function App() {
           }}
           isHost={false}
           onShowLeaderboard={() => setShowLeaderboard(true)}
+          ws={ws}
         />
       </div>
     );
@@ -186,6 +188,7 @@ export default function App() {
           }}
           isHost={isHost}
           onShowLeaderboard={() => setShowLeaderboard(true)}
+          ws={ws}
         />
       </div>
     );
