@@ -49,12 +49,16 @@ export function GameScreen({
 
   const centerSymbols =
     centerCardId !== null && centerCardId !== undefined
-      ? getCardSymbols(centerCardId)
+      ? getCardSymbols(centerCardId) || []
       : [];
   const playerSymbols =
     playerCardId !== null && playerCardId !== undefined
-      ? getCardSymbols(playerCardId)
+      ? getCardSymbols(playerCardId) || []
       : [];
+
+  // Ensure symbols are arrays
+  const safeCenter = Array.isArray(centerSymbols) ? centerSymbols : [];
+  const safePlayer = Array.isArray(playerSymbols) ? playerSymbols : [];
 
   const handleSymbolClick = (symbolId: number) => {
     if (submitted) return;
@@ -77,7 +81,7 @@ export function GameScreen({
           <h3>Center Card</h3>
           <div className="card center-card">
             <div className="card-symbols">
-              {centerSymbols.map((symbolId) => (
+              {safeCenter.map((symbolId) => (
                 <div
                   key={symbolId}
                   className="symbol-box"
@@ -93,7 +97,7 @@ export function GameScreen({
           <h3>Your Card</h3>
           <div className="card player-card">
             <div className="card-symbols">
-              {playerSymbols.map((symbolId) => (
+              {safePlayer.map((symbolId) => (
                 <button
                   key={symbolId}
                   className={`symbol-button ${
