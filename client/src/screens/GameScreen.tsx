@@ -50,7 +50,6 @@ export function GameScreen({
       setTimeRemaining((prev) => {
         const next = prev - 1;
         if (next <= 0) {
-          // Time's up - game should end (server will handle this)
           return 0;
         }
         return next;
@@ -59,6 +58,14 @@ export function GameScreen({
 
     return () => clearInterval(interval);
   }, [state.status]);
+
+  // Detect when time runs out and show game over
+  useEffect(() => {
+    if (timeRemaining === 0 && state.status === "playing") {
+      // Time's up - trigger game over
+      // In a real scenario, server would handle this, but for UX we show it immediately
+    }
+  }, [timeRemaining, state.status]);
 
   const centerSymbols =
     centerCardId !== null && centerCardId !== undefined
@@ -91,6 +98,9 @@ export function GameScreen({
   };
 
   const symbolScale = getSymbolScale();
+
+  // Show game over when time runs out
+  const isTimeUp = timeRemaining === 0 && state.status === "playing";
 
   return (
     <div className="game-screen">
@@ -151,10 +161,10 @@ export function GameScreen({
         </ul>
       </div>
 
-      {state.status === "finished" && (
+      {(state.status === "finished" || isTimeUp) && (
         <div className="game-over-overlay">
           <div className="game-over">
-            <h2>🎉 Game Over!</h2>
+            <h2>{isTimeUp ? "Time Up" : "Game Over"}</h2>
             <div className="final-scores">
               <h3>Final Scores</h3>
               {state.players
@@ -165,13 +175,13 @@ export function GameScreen({
                     className={`score-row ${idx === 0 ? "winner" : ""}`}
                   >
                     <span className="medal">
-                      {idx === 0 ? "🏆" : idx === 1 ? "🥈" : "🥉"}
+                      {idx === 0 ? "1st" : idx === 1 ? "2nd" : "3rd"}
                     </span>
                     <span className="name">
                       {player.name}
                       {player.playerId === playerId && " (you)"}
                     </span>
-                    <span className="score">{player.score}</span>
+                    <span className="score">{player.score} pts</span>
                   </div>
                 ))}
             </div>

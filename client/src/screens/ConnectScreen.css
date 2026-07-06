@@ -3,79 +3,112 @@
   flex-direction: column;
   gap: 1.5rem;
   max-width: 500px;
+  width: 100%;
+  position: relative;
+}
+
+.connect-screen::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  background: var(--color-blue);
+  border: var(--border-width) solid var(--color-fg);
+  transform: rotate(45deg);
+  z-index: -1;
+}
+
+.connect-screen::after {
+  content: '';
+  position: absolute;
+  bottom: -40px;
+  left: -40px;
+  width: 120px;
+  height: 120px;
+  border: var(--border-width) solid var(--color-fg);
+  border-radius: 50%;
+  z-index: -1;
 }
 
 .connect-screen h1 {
-  color: #667eea;
-  margin: 0 0 2rem 0;
-  font-size: 2.8rem;
-  font-weight: 800;
-  letter-spacing: -1px;
+  color: var(--color-fg);
+  margin: 0 0 0.5rem 0;
+  font-size: clamp(2.5rem, 12vw, 4rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -2px;
+  line-height: 0.9;
 }
 
-.connect-screen p {
-  color: #667eea;
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 0;
-  letter-spacing: 0.5px;
+.connect-screen > p:first-of-type {
+  color: var(--color-fg);
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin: 1.5rem 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .connect-screen input {
-  padding: 0.875rem 1rem;
+  padding: 1rem;
   font-size: 1rem;
-  border: 2px solid #e8e8f0;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #f9f9ff 0%, #f5f7ff 100%);
-  transition: all 0.2s;
+  border: var(--border-width) solid var(--color-fg);
+  background: var(--color-white);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+  transition: all 200ms ease-out;
 }
 
-.connect-screen input[type="text"]:nth-of-type(1) {
-  font-family: system-ui, -apple-system, sans-serif;
-}
-
-.connect-screen input[type="text"]:nth-of-type(2) {
-  font-family: monospace;
-  font-size: 0.9rem;
+.connect-screen input:nth-of-type(2) {
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
 }
 
 .connect-screen input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
-  background: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
+  box-shadow: var(--shadow-lg);
+  background: var(--color-yellow);
 }
 
 .connect-screen button {
-  padding: 1rem 1.5rem;
-  font-size: 1.1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
+  padding: 1rem;
+  font-size: 1rem;
+  background: var(--color-red);
+  color: var(--color-white);
+  border: var(--border-width) solid var(--color-fg);
   cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: var(--shadow-md);
+  transition: all 200ms ease-out;
+  font-family: 'Outfit', sans-serif;
   margin-top: 1rem;
 }
 
 .connect-screen button:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  background: #B91A1A;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .connect-screen button:active {
-  transform: translateY(-2px);
+  transform: translateY(2px);
+  box-shadow: 2px 2px 0px 0px #121212;
 }
 
 .connect-screen .error {
-  color: #e74c3c;
+  color: var(--color-white);
   font-size: 0.95rem;
   padding: 1rem;
-  background: linear-gradient(135deg, rgba(231, 76, 60, 0.1) 0%, rgba(192, 57, 43, 0.05) 100%);
-  border: 2px solid rgba(231, 76, 60, 0.3);
-  border-radius: 8px;
+  background: var(--color-red);
+  border: var(--border-width) solid var(--color-fg);
   margin-top: 1rem;
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: var(--shadow-md);
 }

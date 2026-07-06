@@ -3,21 +3,39 @@
   flex-direction: column;
   gap: 1.5rem;
   max-width: 600px;
+  width: 100%;
+  position: relative;
+}
+
+.lobby-screen::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 100px;
+  height: 100px;
+  background: var(--color-yellow);
+  border: var(--border-width) solid var(--color-fg);
+  z-index: -1;
 }
 
 .lobby-screen h1 {
-  color: #667eea;
-  font-size: 2.5rem;
-  font-weight: 800;
-  letter-spacing: -1px;
+  color: var(--color-fg);
+  font-size: clamp(2rem, 10vw, 3.5rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -2px;
+  line-height: 0.9;
   margin-bottom: 0.5rem;
 }
 
 .lobby-screen h3 {
-  color: #667eea;
-  font-size: 1.1rem;
+  color: var(--color-fg);
+  font-size: 1rem;
   margin: 0 0 1rem 0;
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .lobby-buttons {
@@ -27,53 +45,89 @@
 }
 
 .lobby-buttons button {
-  padding: 1.125rem 1.5rem;
-  font-size: 1.1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
+  padding: 1rem;
+  font-size: 1rem;
+  background: var(--color-blue);
+  color: var(--color-white);
+  border: var(--border-width) solid var(--color-fg);
   cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: var(--shadow-md);
+  transition: all 200ms ease-out;
+  font-family: 'Outfit', sans-serif;
 }
 
 .lobby-buttons button:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  background: #0A3090;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.lobby-buttons button:active {
+  transform: translateY(2px);
+  box-shadow: 2px 2px 0px 0px #121212;
+}
+
+.lobby-buttons button:nth-child(1) {
+  background: var(--color-red);
+}
+
+.lobby-buttons button:nth-child(1):hover {
+  background: #B91A1A;
+}
+
+.lobby-buttons button:nth-child(3) {
+  background: var(--color-yellow);
+  color: var(--color-fg);
+}
+
+.lobby-buttons button:nth-child(3):hover {
+  background: #D4A800;
 }
 
 .lobby-screen input {
-  padding: 0.875rem 1rem;
+  padding: 1rem;
   font-size: 1rem;
-  border: 2px solid #e8e8f0;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #f9f9ff 0%, #f5f7ff 100%);
-  transition: all 0.2s;
+  border: var(--border-width) solid var(--color-fg);
+  background: var(--color-white);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+  transition: all 200ms ease-out;
 }
 
 .lobby-screen input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
-  background: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
+  box-shadow: var(--shadow-lg);
+  background: var(--color-yellow);
 }
 
 .lobby-screen button {
-  padding: 0.75rem 1.5rem;
+  padding: 1rem;
   font-size: 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 6px;
+  background: var(--color-blue);
+  color: var(--color-white);
+  border: var(--border-width) solid var(--color-fg);
   cursor: pointer;
-  font-weight: bold;
-  transition: transform 0.2s;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: var(--shadow-md);
+  transition: all 200ms ease-out;
+  font-family: 'Outfit', sans-serif;
 }
 
 .lobby-screen button:hover:not(:disabled) {
+  background: #0A3090;
   transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.lobby-screen button:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 2px 2px 0px 0px #121212;
 }
 
 .lobby-screen button:disabled {
@@ -82,22 +136,32 @@
 }
 
 .lobby-screen button.secondary {
-  background: linear-gradient(135deg, #e8e8f0 0%, #d8d8e8 100%);
-  color: #333;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--color-muted);
+  color: var(--color-fg);
 }
 
 .lobby-screen button.secondary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #d8d8e8 0%, #c8c8d8 100%);
-  transform: translateY(-2px);
+  background: #CCCCCC;
 }
 
 .players-list {
-  background: linear-gradient(135deg, #f9f9ff 0%, #f5f7ff 100%);
+  background: var(--color-white);
   padding: 1.5rem;
-  border-radius: 12px;
-  border: 2px solid #e8e8f5;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.08);
+  border: var(--border-width) solid var(--color-fg);
+  box-shadow: var(--shadow-md);
+  position: relative;
+}
+
+.players-list::before {
+  content: '';
+  position: absolute;
+  top: -15px;
+  right: -15px;
+  width: 40px;
+  height: 40px;
+  background: var(--color-red);
+  border-radius: 50%;
+  border: var(--border-width) solid var(--color-fg);
 }
 
 .players-list ul {
@@ -108,9 +172,10 @@
 
 .players-list li {
   padding: 0.75rem 0;
-  color: #333;
-  border-bottom: 1px solid #e8e8f0;
+  color: var(--color-fg);
+  border-bottom: var(--border-width) solid var(--color-fg);
   font-weight: 500;
+  font-size: 0.95rem;
 }
 
 .players-list li:last-child {
@@ -118,73 +183,113 @@
 }
 
 .start-button {
-  background: linear-gradient(135deg, #27ae60 0%, #16a085 100%);
-  padding: 1.125rem 1.5rem;
-  font-size: 1.1rem;
+  background: var(--color-red);
+  padding: 1rem;
+  font-size: 1rem;
   margin-top: 1.5rem;
-  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  color: var(--color-white);
+  border: var(--border-width) solid var(--color-fg);
+  box-shadow: var(--shadow-md);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  transition: all 200ms ease-out;
+  font-family: 'Outfit', sans-serif;
 }
 
 .start-button:hover:not(:disabled) {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(39, 174, 96, 0.4);
+  background: #B91A1A;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.start-button:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 2px 2px 0px 0px #121212;
+}
+
+.start-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .games-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
   margin: 1.5rem 0;
   max-height: 400px;
   overflow-y: auto;
 }
 
 .game-card {
-  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  background: var(--color-white);
+  border: var(--border-width) solid var(--color-fg);
   padding: 1rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 200ms ease-out;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+.game-card::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 30px;
+  height: 30px;
+  background: var(--color-blue);
+  border: var(--border-width) solid var(--color-fg);
+  transform: rotate(45deg);
+  z-index: -1;
 }
 
 .game-card:hover {
-  border-color: #667eea;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-  transform: translateX(4px);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.game-card:active {
+  transform: translateY(1px);
+  box-shadow: 2px 2px 0px 0px #121212;
 }
 
 .game-code {
-  font-size: 1.3rem;
-  font-weight: bold;
-  color: #667eea;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--color-blue);
   min-width: 80px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .game-info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
   margin: 0 1rem;
 }
 
 .game-info .host {
-  font-size: 0.9rem;
-  color: #555;
+  font-size: 0.95rem;
+  color: var(--color-fg);
+  font-weight: 600;
 }
 
 .game-info .players {
   font-size: 0.85rem;
-  color: #999;
+  color: var(--color-fg);
+  font-weight: 500;
 }
 
 .join-hint {
-  color: #667eea;
-  font-size: 0.9rem;
-  font-weight: bold;
+  color: var(--color-red);
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
 }
