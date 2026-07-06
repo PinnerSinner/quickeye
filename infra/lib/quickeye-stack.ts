@@ -83,6 +83,7 @@ export class QuickeyeStack extends cdk.Stack {
     const startGameFn = makeFn("StartGameFn", "startGame.ts");
     const submitMatchFn = makeFn("SubmitMatchFn", "submitMatch.ts");
     const queryLeaderboardFn = makeFn("QueryLeaderboardFn", "queryLeaderboard.ts");
+    const queryGamesFn = makeFn("QueryGamesFn", "queryGames.ts");
 
     const allFns = [
       connectFn,
@@ -93,6 +94,7 @@ export class QuickeyeStack extends cdk.Stack {
       startGameFn,
       submitMatchFn,
       queryLeaderboardFn,
+      queryGamesFn,
     ];
 
     // --- Table permissions -------------------------------------------------
@@ -138,6 +140,9 @@ export class QuickeyeStack extends cdk.Stack {
     wsApi.addRoute("queryLeaderboard", {
       integration: new WebSocketLambdaIntegration("QueryLeaderboardInt", queryLeaderboardFn),
     });
+    wsApi.addRoute("queryGames", {
+      integration: new WebSocketLambdaIntegration("QueryGamesInt", queryGamesFn),
+    });
 
     const stage = new apigwv2.WebSocketStage(this, "ProdStage", {
       webSocketApi: wsApi,
@@ -156,6 +161,7 @@ export class QuickeyeStack extends cdk.Stack {
       startGameFn,
       submitMatchFn,
       queryLeaderboardFn,
+      queryGamesFn,
     ]) {
       wsApi.grantManageConnections(fn);
     }
