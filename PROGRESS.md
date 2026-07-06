@@ -102,13 +102,20 @@ infrastructure with placeholder UI to come later.
 - **IAM least-privilege** — handlers currently get RW on both tables for
   simplicity; scope down in a later hardening pass.
 
-### How to deploy (when ready)
+### How to deploy and test
 ```bash
 # one-time per account/region:
 cd infra && npx cdk bootstrap
 # deploy (prints the wss:// WebSocket URL on completion):
 npx cdk deploy
+
+# Copy the wss:// URL from the output, then test:
+npm install -w server
+npm -w server run test-client wss://your-api-gateway-url/prod
 ```
+
+The test client simulates a full game (create → join → start → match), so you
+can verify the backend is live and responding before building the UI.
 
 ---
 
