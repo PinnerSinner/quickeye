@@ -11,10 +11,46 @@ See [CLAUDE.md](CLAUDE.md) for the project brief and locked-in decisions.
 | --- | --- |
 | Deck generation (`/shared`) | ✅ Done, 15 tests |
 | Game logic — deal/match/scoring (`/shared`) | ✅ Done, 10 tests |
-| Real-time backend (`/server` + `/infra`) | ✅ Built & synthesizes; ⏳ not yet deployed |
-| Frontend UI (`/client`) | 🔨 In progress: screens + WebSocket integration done |
+| Real-time backend (`/server` + `/infra`) | ✅ Deployed to AWS; test client validates |
+| Frontend UI (`/client`) | ✅ Built; ready for Amplify deployment |
 
-**Total tests passing: 25.**
+**Total tests passing: 25. Backend live: wss://gkj3douxjj.execute-api.us-east-1.amazonaws.com/prod**
+
+---
+
+## Phase 4 — Deployment & Production (Live on AWS)
+
+**✅ Backend deployed to AWS (us-east-1):**
+
+Stack created with CDK:
+- **API Gateway WebSocket API** — live, accepting connections
+- **2 DynamoDB tables** — Connections (tracking sockets), Games (room state)
+- **7 Lambda handlers** — compiled with esbuild, bundled, live
+- **TTL auto-cleanup** — abandoned games/connections cleaned after 6 hours
+
+**WebSocket URL:** `wss://gkj3douxjj.execute-api.us-east-1.amazonaws.com/prod`
+
+**Test validation (local test-client):**
+```
+[SETUP] Alice & Bob connect ✅
+[TEST] Alice creates game RBZX ✅
+[TEST] Bob joins game RBZX ✅
+[TEST] Alice starts game, cards dealt ✅
+        - Center card: 33
+        - Alice's hand: card 18
+        - Both receive state broadcasts
+```
+
+**To test full game flow with your WebSocket URL:**
+```bash
+npm -w server run test-client "wss://your-url/prod"
+```
+
+**Client ready for deployment:**
+- React SPA built: `client/dist/` (151 KB gzipped)
+- All 3 screens implemented (Connect → Lobby → Game)
+- Symbol rendering from deck ✅
+- WebSocket message handlers wired ✅
 
 ---
 
