@@ -109,13 +109,27 @@
 }
 
 .card-section h3 {
-  color: var(--color-fg);
+  color: var(--color-white);
   margin: 0;
   font-size: 0.875rem;
   font-weight: 900;
   letter-spacing: 2px;
   text-transform: uppercase;
   order: -1;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-fg);
+  width: 100%;
+  border: var(--border-width) solid var(--color-fg);
+  border-bottom: none;
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.card-section:first-child h3 {
+  background: var(--color-red);
+}
+
+.card-section:last-child h3 {
+  background: var(--color-blue);
 }
 
 .card {
@@ -407,11 +421,22 @@
   letter-spacing: 1px;
 }
 
-.game-over button {
-  background: var(--color-blue);
-  color: var(--color-white);
-  padding: 1.25rem 2rem;
-  font-size: 1rem;
+.game-over-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 500px) {
+  .game-over-buttons {
+    grid-template-columns: 1fr;
+  }
+}
+
+.game-over-buttons button {
+  padding: 1.25rem 1.5rem;
+  font-size: 0.95rem;
   border: var(--border-width) solid var(--color-fg);
   cursor: pointer;
   font-weight: 700;
@@ -419,17 +444,37 @@
   letter-spacing: 1px;
   box-shadow: var(--shadow-md);
   transition: all 200ms ease-out;
-  margin-top: 2rem;
   font-family: 'Outfit', sans-serif;
 }
 
-.game-over button:hover {
+.game-over-buttons .rematch-btn {
+  background: var(--color-red);
+  color: var(--color-white);
+}
+
+.game-over-buttons .rematch-btn:hover {
+  background: #B91A1A;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.game-over-buttons .rematch-btn:active {
+  transform: translateY(2px);
+  box-shadow: 2px 2px 0px 0px #121212;
+}
+
+.game-over-buttons .return-btn {
+  background: var(--color-blue);
+  color: var(--color-white);
+}
+
+.game-over-buttons .return-btn:hover {
   background: #0A3090;
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
 
-.game-over button:active {
+.game-over-buttons .return-btn:active {
   transform: translateY(2px);
   box-shadow: 2px 2px 0px 0px #121212;
 }

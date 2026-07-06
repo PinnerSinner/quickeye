@@ -11,12 +11,16 @@ interface GameScreenProps {
   state: GameState;
   playerId: string;
   onSubmitMatch: (symbolId: number) => void;
+  onRematch?: () => void;
+  onReturnLobby?: () => void;
 }
 
 export function GameScreen({
   state,
   playerId,
   onSubmitMatch,
+  onRematch,
+  onReturnLobby,
 }: GameScreenProps) {
   const currentPlayer = state.players.find((p) => p.playerId === playerId);
   const centerCardId = state.centerCardId;
@@ -113,7 +117,7 @@ export function GameScreen({
 
       <div className="game-board">
         <div className="card-section">
-          <h3>Center Card</h3>
+          <h3>Match Board</h3>
           <div className="card center-card">
             <div className="card-symbols" style={{ transform: `scale(${symbolScale})` }}>
               {safeCenter.map((symbolId) => (
@@ -129,7 +133,7 @@ export function GameScreen({
         </div>
 
         <div className="card-section">
-          <h3>Your Card</h3>
+          <h3>{currentPlayer?.name || "Your Hand"}</h3>
           <div className="card player-card">
             <div className="card-symbols" style={{ transform: `scale(${symbolScale})` }}>
               {safePlayer.map((symbolId) => (
@@ -185,9 +189,14 @@ export function GameScreen({
                   </div>
                 ))}
             </div>
-            <button onClick={() => window.location.reload()}>
-              Play Again
-            </button>
+            <div className="game-over-buttons">
+              <button className="rematch-btn" onClick={onRematch}>
+                Play Again
+              </button>
+              <button className="return-btn" onClick={onReturnLobby}>
+                Return to Lobby
+              </button>
+            </div>
           </div>
         </div>
       )}

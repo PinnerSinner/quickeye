@@ -157,6 +157,18 @@ export default function App() {
             symbolId,
           } as ClientMessage);
         }}
+        onRematch={() => {
+          game.setState(null);
+          setTimeout(() => {
+            ws.send({
+              action: "startGame",
+              gameId: game.gameId!,
+            } as ClientMessage);
+          }, 100);
+        }}
+        onReturnLobby={() => {
+          game.setState(null);
+        }}
       />
     </div>
   );
