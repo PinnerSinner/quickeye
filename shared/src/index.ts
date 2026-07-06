@@ -2,7 +2,7 @@ export { generateDeck, findMatch, isValidMatch } from "./deckGeneration";
 export type { Card, Deck } from "./deckGeneration";
 
 export { GAME_CONFIG } from "./gameTypes";
-export type { GameState, GameStatus, Player } from "./gameTypes";
+export type { GameState, GameStatus, Player, GameMode, LeaderboardEntry } from "./gameTypes";
 
 export {
   shuffledCardIds,
@@ -20,9 +20,11 @@ export type {
   JoinGameMessage,
   StartGameMessage,
   SubmitMatchMessage,
+  QueryLeaderboardMessage,
   ServerMessage,
   JoinedMessage,
   StateUpdateMessage,
   MatchResultMessage,
   ErrorMessage,
+  LeaderboardMessage,
 } from "./messages";

@@ -9,6 +9,20 @@
 /** Lifecycle of a game room. */
 export type GameStatus = "lobby" | "playing" | "finished";
 
+/** Game mode determines round length and difficulty progression. */
+export type GameMode = "time-attack-60" | "ten-rounds" | "difficulty-scaling";
+
+/** Leaderboard entry for a single player's score. */
+export interface LeaderboardEntry {
+  playerId: string;
+  playerName: string;
+  score: number;
+  gameMode: GameMode;
+  timestamp: number;
+  date: string;
+  rank?: number;
+}
+
 /** A single player in a game. */
 export interface Player {
   /** Stable id we generate on join (survives across messages). */

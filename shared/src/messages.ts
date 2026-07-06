@@ -10,7 +10,7 @@
  * every case, on both ends.
  */
 
-import type { GameState } from "./gameTypes";
+import type { GameState, GameMode, LeaderboardEntry } from "./gameTypes";
 
 // ---------------------------------------------------------------------------
 // Client -> Server
@@ -39,11 +39,19 @@ export interface SubmitMatchMessage {
   symbolId: number;
 }
 
+export interface QueryLeaderboardMessage {
+  action: "queryLeaderboard";
+  gameMode: GameMode;
+  period: "daily" | "all-time";
+  limit?: number;
+}
+
 export type ClientMessage =
   | CreateGameMessage
   | JoinGameMessage
   | StartGameMessage
-  | SubmitMatchMessage;
+  | SubmitMatchMessage
+  | QueryLeaderboardMessage;
 
 export type ClientAction = ClientMessage["action"];
 
@@ -85,8 +93,17 @@ export interface ErrorMessage {
   message: string;
 }
 
+/** Leaderboard entries for a specific game mode and period. */
+export interface LeaderboardMessage {
+  type: "leaderboard";
+  gameMode: GameMode;
+  period: "daily" | "all-time";
+  entries: LeaderboardEntry[];
+}
+
 export type ServerMessage =
   | JoinedMessage
   | StateUpdateMessage
   | MatchResultMessage
-  | ErrorMessage;
+  | ErrorMessage
+  | LeaderboardMessage;
