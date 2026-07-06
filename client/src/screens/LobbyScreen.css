@@ -21,7 +21,7 @@
 }
 
 .lobby-screen h1 {
-  color: var(--color-white);
+  color: var(--color-fg);
   font-size: clamp(2rem, 10vw, 3.5rem);
   font-weight: 900;
   text-transform: uppercase;
@@ -37,6 +37,10 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+.lobby-screen p {
+  color: var(--color-fg);
 }
 
 .lobby-buttons {

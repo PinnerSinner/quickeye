@@ -51,7 +51,7 @@ body {
 }
 
 h1 {
-  color: var(--color-white);
+  color: var(--color-fg);
   margin-bottom: 2rem;
   font-size: clamp(2rem, 10vw, 4rem);
   font-weight: 900;

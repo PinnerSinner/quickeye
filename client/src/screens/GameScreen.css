@@ -27,11 +27,11 @@
   justify-content: space-between;
   align-items: center;
   padding-bottom: 1.5rem;
-  border-bottom: var(--border-width) solid var(--color-white);
+  border-bottom: var(--border-width) solid var(--color-fg);
 }
 
 .game-header h1 {
-  color: var(--color-white);
+  color: var(--color-fg);
   margin: 0;
   font-size: clamp(2rem, 8vw, 3rem);
   font-weight: 900;
