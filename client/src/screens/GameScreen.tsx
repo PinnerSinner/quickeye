@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
 import type { GameState } from "@quickeye/shared";
+import {
+  getCardSymbols,
+  findMatchingSymbol,
+  getSymbolEmoji,
+} from "../utils/deck";
 import "./GameScreen.css";
 
 interface GameScreenProps {
@@ -14,19 +19,29 @@ export function GameScreen({
   onSubmitMatch,
 }: GameScreenProps) {
   const currentPlayer = state.players.find((p) => p.playerId === playerId);
-  const centerCard = state.centerCardId;
-  const playerCard = currentPlayer?.currentCardId;
+  const centerCardId = state.centerCardId;
+  const playerCardId = currentPlayer?.currentCardId;
 
-  // Find matching symbol IDs between center and player's card
-  const [matchingSymbols, setMatchingSymbols] = useState<number[]>([]);
+  const [matchingSymbolId, setMatchingSymbolId] = useState<number | null>(null);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    // This will be implemented once we have deck access
-    // For now, just show placeholder
-  }, [centerCard, playerCard]);
+    if (centerCardId !== null && playerCardId !== null && playerCardId !== undefined) {
+      const symbolId = findMatchingSymbol(centerCardId, playerCardId);
+      setMatchingSymbolId(symbolId);
+    }
+  }, [centerCardId, playerCardId]);
+
+  const centerSymbols = centerCardId !== null ? getCardSymbols(centerCardId) : [];
+  const playerSymbols = playerCardId !== null && playerCardId !== undefined
+    ? getCardSymbols(playerCardId)
+    : [];
 
   const handleSymbolClick = (symbolId: number) => {
+    if (submitted) return;
+    setSubmitted(true);
     onSubmitMatch(symbolId);
+    setTimeout(() => setSubmitted(false), 1000);
   };
 
   return (
@@ -43,15 +58,14 @@ export function GameScreen({
           <h3>Center Card</h3>
           <div className="card center-card">
             <div className="card-symbols">
-              {/* Symbols will be rendered here */}
-              <span className="symbol-placeholder">🔵</span>
-              <span className="symbol-placeholder">🟡</span>
-              <span className="symbol-placeholder">🟢</span>
-              <span className="symbol-placeholder">🔴</span>
-              <span className="symbol-placeholder">🟣</span>
-              <span className="symbol-placeholder">⭐</span>
-              <span className="symbol-placeholder">💎</span>
-              <span className="symbol-placeholder">🎯</span>
+              {centerSymbols.map((symbolId) => (
+                <div
+                  key={symbolId}
+                  className="symbol-box"
+                >
+                  <span className="symbol">{getSymbolEmoji(symbolId)}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -60,15 +74,18 @@ export function GameScreen({
           <h3>Your Card</h3>
           <div className="card player-card">
             <div className="card-symbols">
-              {/* Your card symbols */}
-              <span className="symbol-placeholder">🔵</span>
-              <span className="symbol-placeholder">🟠</span>
-              <span className="symbol-placeholder">🟢</span>
-              <span className="symbol-placeholder">⚫</span>
-              <span className="symbol-placeholder">⚪</span>
-              <span className="symbol-placeholder">🌟</span>
-              <span className="symbol-placeholder">🍕</span>
-              <span className="symbol-placeholder">👁️</span>
+              {playerSymbols.map((symbolId) => (
+                <button
+                  key={symbolId}
+                  className={`symbol-button ${
+                    matchingSymbolId === symbolId ? "matching" : ""
+                  } ${submitted ? "disabled" : ""}`}
+                  onClick={() => handleSymbolClick(symbolId)}
+                  disabled={submitted}
+                >
+                  <span className="symbol">{getSymbolEmoji(symbolId)}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
