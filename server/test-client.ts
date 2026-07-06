@@ -25,7 +25,7 @@ import type {
 
 interface Player {
   name: string;
-  ws: WebSocket;
+  ws: WebSocket | null;
   gameId?: string;
   playerId?: string;
   currentCardId?: number | null;
@@ -63,16 +63,17 @@ function onMessage(
 }
 
 async function main() {
-  const url = process.argv[2];
+  let url = process.argv[2] || process.argv[3] || process.env.WSS_URL;
   if (!url) {
     console.error(
       "Usage: npx ts-node server/test-client.ts wss://your-api-gateway-url/prod"
     );
     process.exit(1);
   }
+  url = url.trim();
 
-  const playerA: Player = { name: "Alice", ws: new WebSocket("") };
-  const playerB: Player = { name: "Bob", ws: new WebSocket("") };
+  const playerA: Player = { name: "Alice", ws: null };
+  const playerB: Player = { name: "Bob", ws: null };
 
   try {
     // Connect both players
@@ -83,7 +84,7 @@ async function main() {
     // --- Player A creates a game ---
     log("TEST", "Player A creates a game");
     await new Promise<void>((resolve) => {
-      onMessage(playerA.ws, (msg: ServerMessage) => {
+      onMessage(playerA.ws!, (msg: ServerMessage) => {
         if (msg.type === "joined") {
           const m = msg as JoinedMessage;
           playerA.gameId = m.gameId;
@@ -94,7 +95,7 @@ async function main() {
           log(playerA.name, `error: ${msg.message}`);
         }
       });
-      send(playerA.ws, { action: "createGame", playerName: "Alice" });
+      send(playerA.ws!, { action: "createGame", playerName: "Alice" });
     });
 
     if (!playerA.gameId) throw new Error("A failed to create game");
@@ -102,7 +103,7 @@ async function main() {
     // --- Player B joins ---
     log("TEST", `Player B joins game ${playerA.gameId}`);
     await new Promise<void>((resolve) => {
-      onMessage(playerB.ws, (msg: ServerMessage) => {
+      onMessage(playerB.ws!, (msg: ServerMessage) => {
         if (msg.type === "joined") {
           const m = msg as JoinedMessage;
           playerB.gameId = m.gameId;
@@ -114,7 +115,7 @@ async function main() {
           log(playerB.name, `state: ${msg.state.players.length} players`);
         }
       });
-      send(playerB.ws, {
+      send(playerB.ws!, {
         action: "joinGame",
         gameId: playerA.gameId!,
         playerName: "Bob",
@@ -127,7 +128,7 @@ async function main() {
     log("TEST", "Player A starts the game");
     await new Promise<void>((resolve) => {
       let updates = 0;
-      onMessage(playerA.ws, (msg: ServerMessage) => {
+      onMessage(playerA.ws!, (msg: ServerMessage) => {
         if (msg.type === "stateUpdate") {
           const m = msg as StateUpdateMessage;
           updates++;
@@ -144,7 +145,7 @@ async function main() {
           }
         }
       });
-      send(playerA.ws, {
+      send(playerA.ws!, {
         action: "startGame",
         gameId: playerA.gameId!,
       });
@@ -152,7 +153,7 @@ async function main() {
 
     // B should also get the playing state
     await new Promise<void>((resolve) => {
-      onMessage(playerB.ws, (msg: ServerMessage) => {
+      onMessage(playerB.ws!, (msg: ServerMessage) => {
         if (msg.type === "stateUpdate") {
           const m = msg as StateUpdateMessage;
           if (m.state.status === "playing") {
@@ -172,7 +173,7 @@ async function main() {
     // --- Player A submits a match ---
     log("TEST", "Player A submits a match attempt");
     await new Promise<void>((resolve) => {
-      onMessage(playerA.ws, (msg: ServerMessage) => {
+      onMessage(playerA.ws!, (msg: ServerMessage) => {
         if (msg.type === "matchResult") {
           const m = msg as MatchResultMessage;
           if (m.correct) {
@@ -188,7 +189,7 @@ async function main() {
       });
       // Submit the first symbol on A's card (we don't validate it's actually
       // the match — the server does that authoritatively)
-      send(playerA.ws, {
+      send(playerA.ws!, {
         action: "submitMatch",
         gameId: playerA.gameId!,
         symbolId: 0, // Just try the first symbol; server validates
