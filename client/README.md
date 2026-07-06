@@ -24,15 +24,31 @@ npm run build
 
 Outputs optimized bundle to `dist/`.
 
-## Deployment
+## Environment Variables
 
-The client is deployed via AWS Amplify Hosting. Point it to this directory, and set the build command to:
+Create a `.env.local` file (or set in Amplify console):
 
 ```
-npm -w client run build
+VITE_WSS_URL=wss://your-api-gateway-url/prod
 ```
 
-Output directory: `client/dist`
+Get the WebSocket URL from `cdk deploy` output in `/infra`.
+
+## Deployment via AWS Amplify Hosting
+
+1. **Connect repo** — AWS Amplify → New app → Connect GitHub
+2. **Build settings** — Set to:
+   ```
+   Build command:    npm -w client run build
+   Build output dir: client/dist
+   ```
+3. **Environment variables** — In Amplify console, add:
+   ```
+   VITE_WSS_URL = wss://gkj3douxjj.execute-api.us-east-1.amazonaws.com/prod
+   ```
+4. **Deploy** — Push to main, Amplify builds and deploys automatically
+
+The client will pre-fill the WebSocket URL from the environment variable but allow users to override it if needed.
 
 ## Game Flow
 

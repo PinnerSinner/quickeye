@@ -15,7 +15,8 @@ import "./App.css";
 
 export default function App() {
   const game = useGame();
-  const [wsUrl, setWsUrl] = useState("");
+  const defaultUrl = import.meta.env.VITE_WSS_URL || "";
+  const [wsUrl, setWsUrl] = useState(defaultUrl);
 
   const ws = useWebSocket({ url: wsUrl, enabled: !!wsUrl });
 
@@ -63,7 +64,7 @@ export default function App() {
   if (!ws.connected) {
     return (
       <div className="container">
-        <ConnectScreen onConnect={handleConnect} error={ws.error || undefined} />
+        <ConnectScreen onConnect={handleConnect} error={ws.error || undefined} defaultUrl={defaultUrl} />
       </div>
     );
   }

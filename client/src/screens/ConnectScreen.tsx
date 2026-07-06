@@ -4,10 +4,11 @@ import "./ConnectScreen.css";
 interface ConnectScreenProps {
   onConnect: (url: string) => void;
   error?: string;
+  defaultUrl?: string;
 }
 
-export function ConnectScreen({ onConnect, error }: ConnectScreenProps) {
-  const [url, setUrl] = useState("");
+export function ConnectScreen({ onConnect, error, defaultUrl = "" }: ConnectScreenProps) {
+  const [url, setUrl] = useState(defaultUrl);
 
   const handleConnect = () => {
     if (!url.trim()) {
