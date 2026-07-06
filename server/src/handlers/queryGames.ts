@@ -24,7 +24,7 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
   const endpoint = endpointFromEvent(event.requestContext);
 
   try {
-    // Scan for all lobby games
+    // Scan for all lobby games (skip finished/playing games)
     const res = await doc.send(
       new ScanCommand({
         TableName: GAMES_TABLE,
@@ -37,12 +37,15 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
     const games = (res.Items as GameState[]) ?? [];
 
     // Extract summary info (gameId, host name, player count)
-    const gameSummaries = games.map((game) => ({
-      gameId: game.gameId,
-      host: game.players.length > 0 ? game.players[0].name : "Unknown",
-      playerCount: game.players.length,
-      gameMode: game.gameMode,
-    }));
+    // Only include games with at least 1 player (host must be waiting)
+    const gameSummaries = games
+      .filter((game) => game.players.length > 0)
+      .map((game) => ({
+        gameId: game.gameId,
+        host: game.players[0].name,
+        playerCount: game.players.length,
+        gameMode: game.gameMode,
+      }));
 
     await sendToConnection(endpoint, connectionId, {
       type: "gamesList",

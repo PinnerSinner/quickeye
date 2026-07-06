@@ -28,3 +28,5 @@ export type {
   ErrorMessage,
   LeaderboardMessage,
 } from "./messages";
+
+export { containsProfanity, sanitizePlayerName } from "./profanityFilter";

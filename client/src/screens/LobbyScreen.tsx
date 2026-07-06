@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { GameState } from "@quickeye/shared";
+import { containsProfanity } from "@quickeye/shared";
 import "./LobbyScreen.css";
 
 interface GameSummary {
@@ -60,6 +61,10 @@ export function LobbyScreen({
       alert("Enter your name");
       return;
     }
+    if (containsProfanity(inputName)) {
+      alert("Name contains inappropriate content. Please choose another name.");
+      return;
+    }
     onCreateGame(inputName);
   };
 
@@ -71,6 +76,10 @@ export function LobbyScreen({
     }
     if (!inputName.trim()) {
       alert("Enter your name");
+      return;
+    }
+    if (containsProfanity(inputName)) {
+      alert("Name contains inappropriate content. Please choose another name.");
       return;
     }
     onJoinGame(code.toUpperCase(), inputName);
@@ -108,7 +117,7 @@ export function LobbyScreen({
                   className="game-card"
                   onClick={() => {
                     setJoinCode(game.gameId);
-                    handleJoin(game.gameId, inputName);
+                    handleJoin(game.gameId);
                   }}
                 >
                   <div className="game-code">{game.gameId}</div>
@@ -122,6 +131,15 @@ export function LobbyScreen({
                 </div>
               ))
             )}
+          </div>
+          <div style={{ marginTop: "1rem" }}>
+            <input
+              type="text"
+              placeholder="Your name"
+              value={inputName}
+              onChange={(e) => setInputName(e.target.value)}
+              style={{ marginBottom: "0.5rem" }}
+            />
           </div>
           <button className="secondary" onClick={() => setMode("choose")}>
             Back
@@ -177,6 +195,13 @@ export function LobbyScreen({
   }
 
   // In lobby with game state
+  const handleCopyInvite = () => {
+    const inviteUrl = `${window.location.origin}?join=${state.gameId}`;
+    navigator.clipboard.writeText(inviteUrl).then(() => {
+      alert("Invite link copied to clipboard!");
+    });
+  };
+
   return (
     <div className="lobby-screen">
       <h1>Room {state.gameId}</h1>
@@ -192,13 +217,22 @@ export function LobbyScreen({
         </ul>
       </div>
       {isHost && (
-        <button
-          className="start-button"
-          onClick={onStartGame}
-          disabled={state.players.length < 2}
-        >
-          Start Game
-        </button>
+        <div style={{ display: "flex", gap: "1rem", flexDirection: "column" }}>
+          <button
+            className="start-button"
+            onClick={onStartGame}
+            disabled={state.players.length < 2}
+          >
+            Start Game
+          </button>
+          <button
+            className="secondary"
+            onClick={handleCopyInvite}
+            style={{ background: "var(--color-blue)", color: "white" }}
+          >
+            Copy Invite Link
+          </button>
+        </div>
       )}
     </div>
   );

@@ -12,6 +12,7 @@ import type { APIGatewayProxyWebsocketHandlerV2 } from "aws-lambda";
 import {
   GAME_CONFIG,
   generateRoomCode,
+  containsProfanity,
   type CreateGameMessage,
   type GameState,
   type Player,
@@ -26,8 +27,18 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
 
   try {
     const body = JSON.parse(event.body ?? "{}") as CreateGameMessage;
-    const playerName = (body.playerName ?? "").trim() || "Player";
+    let playerName = (body.playerName ?? "").trim() || "Player";
     const gameMode = body.gameMode ?? "time-attack-60";
+
+    // Check for profanity in player name
+    if (containsProfanity(playerName)) {
+      await sendToConnection(endpoint, connectionId, {
+        type: "error",
+        code: "INVALID_NAME",
+        message: "Player name contains inappropriate content.",
+      });
+      return ok();
+    }
 
     // Find an unused room code (retry a few times on the rare collision).
     let gameId = generateRoomCode();

@@ -13,6 +13,7 @@
 import type { APIGatewayProxyWebsocketHandlerV2 } from "aws-lambda";
 import {
   GAME_CONFIG,
+  containsProfanity,
   type JoinGameMessage,
   type GameState,
   type Player,
@@ -32,6 +33,12 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
     const body = JSON.parse(event.body ?? "{}") as JoinGameMessage;
     const gameId = (body.gameId ?? "").trim().toUpperCase();
     const playerName = (body.playerName ?? "").trim() || "Player";
+
+    // Check for profanity in player name
+    if (containsProfanity(playerName)) {
+      await sendError("INVALID_NAME", "Player name contains inappropriate content.");
+      return ok();
+    }
 
     const game = await getGame(gameId);
     if (!game) {
