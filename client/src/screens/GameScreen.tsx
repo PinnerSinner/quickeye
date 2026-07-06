@@ -80,6 +80,18 @@ export function GameScreen({
     setTimeout(() => setSubmitted(false), 1000);
   };
 
+  // Calculate scale factor based on time remaining (0-30s)
+  // At 30s (start): scale = 1.0
+  // At 15s (half): scale = 0.95
+  // At 0s (end): scale = 0.7
+  const getSymbolScale = () => {
+    const maxTime = 30;
+    const scale = Math.max(0.7, 1 - (maxTime - timeRemaining) * 0.01);
+    return scale;
+  };
+
+  const symbolScale = getSymbolScale();
+
   return (
     <div className="game-screen">
       <div className="game-header">
@@ -93,7 +105,7 @@ export function GameScreen({
         <div className="card-section">
           <h3>Center Card</h3>
           <div className="card center-card">
-            <div className="card-symbols">
+            <div className="card-symbols" style={{ transform: `scale(${symbolScale})` }}>
               {safeCenter.map((symbolId) => (
                 <div
                   key={symbolId}
@@ -109,7 +121,7 @@ export function GameScreen({
         <div className="card-section">
           <h3>Your Card</h3>
           <div className="card player-card">
-            <div className="card-symbols">
+            <div className="card-symbols" style={{ transform: `scale(${symbolScale})` }}>
               {safePlayer.map((symbolId) => (
                 <button
                   key={symbolId}

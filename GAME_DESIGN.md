@@ -25,30 +25,46 @@ Goal: Transform "kinda works" → "actually fun to play"
 ## Build Log: Session 2
 
 ### Completed (2026-07-06)
-1. **Round Timer** — Implemented countdown from 30s, pulses red at ≤5s
+1. **Round Timer** (✓) — Countdown from 30s, pulses red at ≤5s
    - File: `client/src/screens/GameScreen.tsx`
-   - Uses `setInterval` to tick every 1000ms, stops when time reaches 0
+   - Uses `setInterval` to tick every 1000ms
    
-2. **End-Game Screen** — Added medal leaderboard (🏆🥈🥉)
-   - File: `client/src/screens/GameScreen.tsx` + `.css`
-   - Shows final scores sorted by rank, "Play Again" button reloads page
-   - Dark overlay with centered modal for focus
+2. **End-Game Screen** (✓) — Medal leaderboard (🏆🥈🥉)
+   - Sorted rankings with play-again button
+   - Dark overlay modal with elegant styling
 
-3. **Persistent Player Names** — Saves to localStorage
-   - File: `client/src/App.tsx`
-   - Key: `quickeye_player_name` — persists across sessions
+3. **Persistent Player Names** (✓) — localStorage persistence
+   - Key: `quickeye_player_name`
+   - Survives page refresh and reconnection
 
-4. **Browse Games UI** — Lobby list replaces code copy-paste
-   - File: `client/src/screens/LobbyScreen.tsx` + `.css`
-   - New "Browse Games" button on main menu
-   - Shows mock available games with host name, player count
-   - Click to join flow (will wire to real server broadcast later)
-   - Styled with hover effects and join hint
+4. **Browse Games UI** (✓) — Mock game list
+   - "Browse Games" button on main menu
+   - Shows host, player count, click-to-join flow
+   - Real server integration pending
+
+5. **Visual Polish Pass** (✓) — Extensive styling overhaul
+   - Game board: 4x2 grid layout, larger symbols (2.2rem)
+   - Gradients on cards, buttons, inputs; shadows everywhere
+   - Cubic-bezier easing on all transitions for "snappy" feel
+   - Pulse-match animation for correct selections
+   - Consistent color palette: #667eea primary, #764ba2 accent
+   
+6. **Game Screen** — Enhanced layout & header
+   - Larger title (2.5rem), subtle header border
+   - Centered board with better spacing (3rem gap)
+   - Card labels uppercase with tracking
+   - Improved timer display (1.3rem, shadows)
+
+7. **Lobby Screens** — Polished UX
+   - Button shadows, improved hover animations
+   - Gradient input fields with focus effects
+   - Players list with subtle separators
+   - Secondary buttons with gray gradients
 
 ### Next Steps
-- Gather UI polish feedback on card layout, symbol sizing, spacing
-- Wire browse games to server-side game broadcast
-- Consider speed mechanic (symbol shrink/rotate as timer runs)
+- Implement speed mechanic (shrinking/rotating symbols as timer runs)
+- Wire browse games to server API
+- Real artwork to replace emoji symbols
 
 ### Known Issues (Deferred)
 - Card symbol mismatch between players (server/client deck version)
