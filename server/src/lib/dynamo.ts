@@ -18,7 +18,8 @@ import {
   PutCommand,
   DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
-import type { GameState } from "@quickeye/shared";
+import type { GameState, GameMode, LeaderboardEntry } from "@quickeye/shared";
+import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 
 const client = new DynamoDBClient({});
 const doc = DynamoDBDocumentClient.from(client, {
@@ -27,6 +28,7 @@ const doc = DynamoDBDocumentClient.from(client, {
 
 const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE!;
 const GAMES_TABLE = process.env.GAMES_TABLE!;
+const LEADERBOARD_TABLE = process.env.LEADERBOARD_TABLE!;
 
 /** What we store per open WebSocket connection. */
 export interface ConnectionRecord {
@@ -112,4 +114,66 @@ export async function deleteGame(gameId: string): Promise<void> {
   await doc.send(
     new DeleteCommand({ TableName: GAMES_TABLE, Key: { gameId } })
   );
+}
+
+// --- Leaderboard -----------------------------------------------------------
+
+/**
+ * Save a score to the leaderboard.
+ * Stores entry with gameMode#period as partition key.
+ * Daily entries use date in the key, all-time entries use consistent key.
+ */
+export async function putLeaderboardEntry(
+  entry: LeaderboardEntry
+): Promise<void> {
+  const period = entry.date; // Use date as additional key component for daily
+  const pk =
+    entry.date === "all-time"
+      ? `${entry.gameMode}#all-time`
+      : `${entry.gameMode}#daily#${entry.date}`;
+
+  await doc.send(
+    new PutCommand({
+      TableName: LEADERBOARD_TABLE,
+      Item: {
+        pk,
+        sk: entry.timestamp,
+        ...entry,
+      },
+    })
+  );
+}
+
+/**
+ * Query leaderboard entries for a game mode and period.
+ * Returns top N entries sorted by score (highest first).
+ */
+export async function getLeaderboard(
+  gameMode: GameMode,
+  period: "daily" | "all-time",
+  limit: number = 50
+): Promise<LeaderboardEntry[]> {
+  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  const pk =
+    period === "all-time"
+      ? `${gameMode}#all-time`
+      : `${gameMode}#daily#${today}`;
+
+  const res = await doc.send(
+    new QueryCommand({
+      TableName: LEADERBOARD_TABLE,
+      KeyConditionExpression: "pk = :pk",
+      ExpressionAttributeValues: { ":pk": pk },
+      Limit: limit * 2, // Get extra in case of duplicates
+      ScanIndexForward: false, // DESC by timestamp (newest first)
+    })
+  );
+
+  const items = (res.Items as (LeaderboardEntry & { pk: string; sk: number })[]) ?? [];
+
+  // Sort by score DESC and return top N
+  return items
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(({ pk, sk, ...entry }) => entry);
 }
