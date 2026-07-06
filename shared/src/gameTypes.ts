@@ -73,3 +73,19 @@ export const GAME_CONFIG = {
   /** Speed-variant timing (seconds) — see CLAUDE.md speed mechanic. Not wired to logic yet. */
   roundCountdownSeconds: 30,
 } as const;
+
+/** Game mode configurations defining rules and timing for each mode. */
+export const GAME_MODE_CONFIG: Record<GameMode, { label: string; description: string }> = {
+  "time-attack-60": {
+    label: "Time Attack - 60s",
+    description: "Score as many points as possible in 60 seconds",
+  },
+  "ten-rounds": {
+    label: "10 Rounds",
+    description: "How fast can you find 10 matches?",
+  },
+  "difficulty-scaling": {
+    label: "Difficulty Scaling",
+    description: "Start easy — every 5 matches adds a symbol",
+  },
+} as const;

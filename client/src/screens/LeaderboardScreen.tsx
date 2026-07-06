@@ -4,9 +4,13 @@ import "./LeaderboardScreen.css";
 
 interface LeaderboardScreenProps {
   onClose: () => void;
+  ws?: {
+    send: (msg: any) => void;
+    on: (event: string, handler: (msg: any) => void) => () => void;
+  };
 }
 
-export function LeaderboardScreen({ onClose }: LeaderboardScreenProps) {
+export function LeaderboardScreen({ onClose, ws }: LeaderboardScreenProps) {
   const [period, setPeriod] = useState<"daily" | "all-time">("all-time");
   const [gameMode, setGameMode] = useState<GameMode>("time-attack-60");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
@@ -19,10 +23,28 @@ export function LeaderboardScreen({ onClose }: LeaderboardScreenProps) {
   ];
 
   useEffect(() => {
-    // TODO: Query leaderboard from WebSocket
-    // For now, show placeholder data
-    setEntries([]);
-  }, [period, gameMode]);
+    if (!ws) return;
+
+    setLoading(true);
+
+    // Listen for leaderboard response
+    const unsubscribe = ws.on("leaderboard", (msg: any) => {
+      if (msg.gameMode === gameMode && msg.period === period) {
+        setEntries(msg.entries);
+        setLoading(false);
+      }
+    });
+
+    // Query leaderboard
+    ws.send({
+      action: "queryLeaderboard",
+      gameMode,
+      period,
+      limit: 50,
+    });
+
+    return unsubscribe;
+  }, [period, gameMode, ws]);
 
   return (
     <div className="leaderboard-screen">

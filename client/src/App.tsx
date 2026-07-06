@@ -70,11 +70,17 @@ export default function App() {
       game.setError(msg.message);
     });
 
+    const unsubLeaderboard = ws.on("leaderboard", (msg: any) => {
+      console.log("Leaderboard update:", msg);
+      // Handled by LeaderboardScreen component
+    });
+
     return () => {
       unsubJoined();
       unsubStateUpdate();
       unsubMatchResult();
       unsubError();
+      unsubLeaderboard();
     };
   }, [ws, game]);
 
@@ -97,7 +103,7 @@ export default function App() {
   if (showLeaderboard) {
     return (
       <div className="container">
-        <LeaderboardScreen onClose={() => setShowLeaderboard(false)} />
+        <LeaderboardScreen onClose={() => setShowLeaderboard(false)} ws={ws} />
       </div>
     );
   }

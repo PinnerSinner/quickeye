@@ -65,7 +65,8 @@
 }
 
 .lobby-buttons button:hover {
-  background: #0A3090;
+  background: #000000;
+  color: var(--color-white);
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
@@ -80,7 +81,8 @@
 }
 
 .lobby-buttons button:nth-child(1):hover {
-  background: #B91A1A;
+  background: #000000;
+  color: var(--color-white);
 }
 
 .lobby-buttons button:nth-child(3) {
@@ -89,7 +91,8 @@
 }
 
 .lobby-buttons button:nth-child(3):hover {
-  background: #D4A800;
+  background: #000000;
+  color: var(--color-fg);
 }
 
 .lobby-screen input {
@@ -300,8 +303,8 @@
 }
 
 .leaderboard-btn {
-  background: var(--color-yellow);
-  color: var(--color-fg);
+  background: #22AA44;
+  color: var(--color-white);
   padding: 1rem;
   font-size: 1rem;
   border: var(--border-width) solid var(--color-fg);
@@ -316,7 +319,8 @@
 }
 
 .leaderboard-btn:hover {
-  background: #D4A800;
+  background: #000000;
+  color: var(--color-white);
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
