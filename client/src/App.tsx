@@ -1,42 +1,144 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useWebSocket, useGame } from "./hooks";
+import {
+  ConnectScreen,
+  LobbyScreen,
+  GameScreen,
+} from "./screens";
+import type {
+  ClientMessage,
+  JoinedMessage,
+  StateUpdateMessage,
+  MatchResultMessage,
+} from "@quickeye/shared";
 import "./App.css";
 
 export default function App() {
+  const game = useGame();
   const [wsUrl, setWsUrl] = useState("");
-  const [connected, setConnected] = useState(false);
 
-  const handleConnect = () => {
-    if (!wsUrl.trim()) {
-      alert("Enter a WebSocket URL");
-      return;
-    }
-    // Connection logic will be implemented next
-    console.log("Connecting to:", wsUrl);
+  const ws = useWebSocket({ url: wsUrl, enabled: !!wsUrl });
+
+  const handleConnect = (url: string) => {
+    setWsUrl(url);
   };
 
-  if (!connected) {
+  // Listen for game messages
+  useEffect(() => {
+    const unsubJoined = ws.on("joined", (msg: any) => {
+      const m = msg as JoinedMessage;
+      game.setGameId(m.gameId);
+      game.setPlayerId(m.playerId);
+      game.setState(m.state);
+    });
+
+    const unsubStateUpdate = ws.on("stateUpdate", (msg: any) => {
+      const m = msg as StateUpdateMessage;
+      game.setState(m.state);
+    });
+
+    const unsubMatchResult = ws.on("matchResult", (msg: any) => {
+      const m = msg as MatchResultMessage;
+      if (m.correct) {
+        // Score update will come via stateUpdate
+        console.log("Match correct!");
+      } else {
+        alert("Incorrect match, try again!");
+      }
+    });
+
+    const unsubError = ws.on("error", (msg: any) => {
+      game.setError(msg.message);
+    });
+
+    return () => {
+      unsubJoined();
+      unsubStateUpdate();
+      unsubMatchResult();
+      unsubError();
+    };
+  }, [ws, game]);
+
+  // Screen routing
+  if (!ws.connected) {
     return (
       <div className="container">
-        <h1>Quickeye</h1>
-        <div className="setup-screen">
-          <p>Enter your WebSocket API URL to connect:</p>
-          <input
-            type="text"
-            placeholder="wss://your-api-gateway-url/prod"
-            value={wsUrl}
-            onChange={(e) => setWsUrl(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleConnect()}
-          />
-          <button onClick={handleConnect}>Connect</button>
-        </div>
+        <ConnectScreen onConnect={handleConnect} error={ws.error || undefined} />
+      </div>
+    );
+  }
+
+  if (!game.state) {
+    return (
+      <div className="container">
+        <LobbyScreen
+          state={null}
+          playerId={game.playerId || ""}
+          playerName={game.playerName}
+          onCreateGame={(name) => {
+            game.setPlayerName(name);
+            ws.send({
+              action: "createGame",
+              playerName: name,
+            } as ClientMessage);
+          }}
+          onJoinGame={(gameId, name) => {
+            game.setPlayerName(name);
+            ws.send({
+              action: "joinGame",
+              gameId,
+              playerName: name,
+            } as ClientMessage);
+          }}
+          onStartGame={() => {
+            ws.send({
+              action: "startGame",
+              gameId: game.gameId!,
+            } as ClientMessage);
+          }}
+          isHost={false}
+        />
+      </div>
+    );
+  }
+
+  const isHost =
+    game.state.players.length > 0 && game.state.players[0].playerId === game.playerId;
+
+  if (game.state.status === "lobby") {
+    return (
+      <div className="container">
+        <LobbyScreen
+          state={game.state}
+          playerId={game.playerId || ""}
+          playerName={game.playerName}
+          onCreateGame={() => {}}
+          onJoinGame={() => {}}
+          onStartGame={() => {
+            ws.send({
+              action: "startGame",
+              gameId: game.gameId!,
+            } as ClientMessage);
+          }}
+          isHost={isHost}
+        />
       </div>
     );
   }
 
   return (
-    <div className="container">
-      <h1>Quickeye</h1>
-      <p>Connected! Lobby coming next...</p>
+    <div className="game-container">
+      <GameScreen
+        state={game.state}
+        playerId={game.playerId || ""}
+        onSubmitMatch={(symbolId) => {
+          ws.send({
+            action: "submitMatch",
+            gameId: game.gameId!,
+            symbolId,
+          } as ClientMessage);
+        }}
+      />
     </div>
   );
 }

@@ -1,0 +1,101 @@
+.lobby-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.lobby-screen h1 {
+  color: #667eea;
+  font-size: 2rem;
+}
+
+.lobby-screen h3 {
+  color: #333;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.lobby-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-direction: column;
+}
+
+.lobby-buttons button {
+  padding: 1rem;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.2s;
+}
+
+.lobby-buttons button:hover {
+  transform: translateY(-2px);
+}
+
+.lobby-screen input {
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+}
+
+.lobby-screen input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.lobby-screen button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.2s;
+}
+
+.lobby-screen button:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.lobby-screen button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lobby-screen button.secondary {
+  background: #ccc;
+  color: #333;
+}
+
+.players-list {
+  background: #f5f5f5;
+  padding: 1rem;
+  border-radius: 6px;
+}
+
+.players-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.players-list li {
+  padding: 0.5rem 0;
+  color: #333;
+}
+
+.start-button {
+  background: linear-gradient(135deg, #27ae60 0%, #16a085 100%);
+  padding: 1rem;
+  font-size: 1.1rem;
+  margin-top: 1rem;
+}

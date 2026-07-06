@@ -1,0 +1,144 @@
+.game-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 1000px;
+}
+
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.game-header h1 {
+  color: #667eea;
+  margin: 0;
+  font-size: 2rem;
+}
+
+.timer {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.game-board {
+  display: flex;
+  gap: 2rem;
+  justify-content: space-around;
+}
+
+.card-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card-section h3 {
+  color: #333;
+  margin: 0;
+}
+
+.card {
+  background: white;
+  border: 3px solid #667eea;
+  border-radius: 12px;
+  padding: 1.5rem;
+  min-width: 250px;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.2);
+}
+
+.card-symbols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  width: 100%;
+  height: 100%;
+}
+
+.symbol-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.2s, transform 0.2s;
+  background: #f5f5f5;
+}
+
+.symbol-placeholder:hover {
+  background: #ffe0e6;
+  transform: scale(1.1);
+}
+
+.center-card .symbol-placeholder {
+  background: #e8e8f0;
+}
+
+.scores {
+  background: white;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+}
+
+.scores h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.scores ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.scores li {
+  padding: 0.5rem 0;
+  color: #555;
+  border-bottom: 1px solid #eee;
+}
+
+.scores li:last-child {
+  border-bottom: none;
+}
+
+.game-over {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+}
+
+.game-over h2 {
+  color: #27ae60;
+  font-size: 2rem;
+}
+
+.game-over p {
+  color: #555;
+  margin-top: 0.5rem;
+}

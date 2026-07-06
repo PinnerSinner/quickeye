@@ -1,0 +1,59 @@
+.connect-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.connect-screen h1 {
+  color: #667eea;
+  margin-bottom: 1rem;
+  font-size: 2.5rem;
+}
+
+.connect-screen p {
+  color: #555;
+  font-size: 1rem;
+}
+
+.connect-screen input {
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-family: monospace;
+}
+
+.connect-screen input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.connect-screen button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.2s;
+}
+
+.connect-screen button:hover {
+  transform: translateY(-2px);
+}
+
+.connect-screen button:active {
+  transform: translateY(0);
+}
+
+.connect-screen .error {
+  color: #e74c3c;
+  font-size: 0.9rem;
+  padding: 0.5rem;
+  background: rgba(231, 76, 60, 0.1);
+  border-radius: 4px;
+  margin-top: 0.5rem;
+}
