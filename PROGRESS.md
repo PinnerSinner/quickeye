@@ -12,9 +12,61 @@ See [CLAUDE.md](CLAUDE.md) for the project brief and locked-in decisions.
 | Deck generation (`/shared`) | ✅ Done, 15 tests |
 | Game logic — deal/match/scoring (`/shared`) | ✅ Done, 10 tests |
 | Real-time backend (`/server` + `/infra`) | ✅ Built & synthesizes; ⏳ not yet deployed |
-| Frontend (`/client`) | ⛔ Not started |
+| Frontend UI (`/client`) | 🔨 In progress: screens + WebSocket integration done |
 
 **Total tests passing: 25.**
+
+---
+
+## Phase 3 — React client UI (Vite + WebSocket messaging)
+
+**Goal (v1 priority #3):** browser-based player interface for the game loop.
+
+### What was built
+
+**`/client` (new React SPA):**
+- `hooks/useWebSocket.ts` — WebSocket connection lifecycle + message routing
+- `hooks/useGame.ts` — game state (gameId, playerId, GameState)
+- `screens/ConnectScreen.tsx` — WebSocket URL input (initial setup)
+- `screens/LobbyScreen.tsx` — create/join room, player list, start button (host-only)
+- `screens/GameScreen.tsx` — center card + player card grid, scores, placeholder symbols
+- `App.tsx` — screen routing (Connect → Lobby → Game)
+- Vite + TypeScript config, basic styling (gradient bg, card UI)
+
+### Game flow (UI side)
+
+1. User enters WebSocket URL → server URL is validated and connection opens
+2. In lobby, user chooses create or join:
+   - Create: generates unique room code
+   - Join: enters code + connects to existing game
+3. Once in game (status=playing), players see:
+   - Center card (8 symbols)
+   - Their hand card (8 symbols)
+   - All player scores
+4. Clicking a symbol sends `submitMatch` → server validates, broadcasts result
+
+### Verification done
+
+- UI scaffolds clean (no console errors)
+- Message type safety via @quickeye/shared discriminated unions
+- Screen routing logic covers all game states
+
+### Known gaps / next steps
+
+- **Symbol rendering** — currently placeholder emoji, needs deck integration
+- **Matching logic** — GameScreen needs to highlight/find actual matching symbol
+- **Timer UI** — countdown bar not wired yet (GAME_CONFIG.roundCountdownSeconds)
+- **Deck access in client** — will need `generateDeck` + `findMatch` from shared
+- **Deployment** — UI ready, needs Amplify pointing to /client/dist
+- **Error handling** — basic alerts, no reconnection/retry yet
+
+### How to run locally
+
+```bash
+npm -w client run dev     # Vite dev server on :3000
+```
+
+Then point it at a deployed WebSocket API URL.
 
 ---
 
