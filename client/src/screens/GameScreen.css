@@ -25,6 +25,21 @@
   border-radius: 6px;
   font-weight: bold;
   font-size: 1.1rem;
+  transition: background 0.3s;
+}
+
+.timer.danger {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  animation: pulse 0.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 .game-board {

@@ -17,6 +17,16 @@ export default function App() {
   const game = useGame();
   const defaultUrl = import.meta.env.VITE_WSS_URL || "";
   const [wsUrl, setWsUrl] = useState(defaultUrl);
+  const [savedName, setSavedName] = useState(() => {
+    return localStorage.getItem("quickeye_player_name") || "";
+  });
+
+  // Auto-save player name to localStorage
+  const handleNameChange = (name: string) => {
+    setSavedName(name);
+    localStorage.setItem("quickeye_player_name", name);
+    game.setPlayerName(name);
+  };
 
   const ws = useWebSocket({ url: wsUrl, enabled: !!wsUrl });
 
@@ -66,7 +76,13 @@ export default function App() {
   if (!ws.connected) {
     return (
       <div className="container">
-        <ConnectScreen onConnect={handleConnect} error={ws.error || undefined} defaultUrl={defaultUrl} />
+        <ConnectScreen
+          onConnect={handleConnect}
+          error={ws.error || undefined}
+          defaultUrl={defaultUrl}
+          savedName={savedName}
+          onNameChange={handleNameChange}
+        />
       </div>
     );
   }

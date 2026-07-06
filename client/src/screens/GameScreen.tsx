@@ -24,6 +24,7 @@ export function GameScreen({
 
   const [matchingSymbolId, setMatchingSymbolId] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(30);
 
   // Debug logging
   useEffect(() => {
@@ -40,6 +41,24 @@ export function GameScreen({
   useEffect(() => {
     setMatchingSymbolId(null);
   }, [centerCardId, playerCardId]);
+
+  // Timer countdown
+  useEffect(() => {
+    if (state.status !== "playing") return;
+
+    const interval = setInterval(() => {
+      setTimeRemaining((prev) => {
+        const next = prev - 1;
+        if (next <= 0) {
+          // Time's up - game should end (server will handle this)
+          return 0;
+        }
+        return next;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [state.status]);
 
   const centerSymbols =
     centerCardId !== null && centerCardId !== undefined
@@ -65,8 +84,8 @@ export function GameScreen({
     <div className="game-screen">
       <div className="game-header">
         <h1>Quickeye</h1>
-        <div className="timer">
-          <span>Round: 30s</span>
+        <div className={`timer ${timeRemaining <= 5 ? "danger" : ""}`}>
+          <span>{timeRemaining}s</span>
         </div>
       </div>
 
