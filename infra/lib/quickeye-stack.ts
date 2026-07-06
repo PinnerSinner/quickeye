@@ -44,6 +44,13 @@ export class QuickeyeStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    const leaderboardTable = new dynamodb.Table(this, "LeaderboardTable", {
+      partitionKey: { name: "pk", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "sk", type: dynamodb.AttributeType.NUMBER },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
     // --- Lambda factory ----------------------------------------------------
     // Every handler shares the same table env vars and bundling settings, so a
     // small helper keeps the route wiring below readable.
@@ -58,6 +65,7 @@ export class QuickeyeStack extends cdk.Stack {
         environment: {
           CONNECTIONS_TABLE: connectionsTable.tableName,
           GAMES_TABLE: gamesTable.tableName,
+          LEADERBOARD_TABLE: leaderboardTable.tableName,
         },
         bundling: {
           // AWS SDK v3 ships in the Node 20 runtime — don't bundle it.
@@ -74,6 +82,7 @@ export class QuickeyeStack extends cdk.Stack {
     const joinGameFn = makeFn("JoinGameFn", "joinGame.ts");
     const startGameFn = makeFn("StartGameFn", "startGame.ts");
     const submitMatchFn = makeFn("SubmitMatchFn", "submitMatch.ts");
+    const queryLeaderboardFn = makeFn("QueryLeaderboardFn", "queryLeaderboard.ts");
 
     const allFns = [
       connectFn,
@@ -83,14 +92,16 @@ export class QuickeyeStack extends cdk.Stack {
       joinGameFn,
       startGameFn,
       submitMatchFn,
+      queryLeaderboardFn,
     ];
 
     // --- Table permissions -------------------------------------------------
-    // Prototype-simple: every handler can read/write both tables. (A hardening
+    // Prototype-simple: every handler can read/write all tables. (A hardening
     // pass later would scope each function to only what it touches.)
     for (const fn of allFns) {
       connectionsTable.grantReadWriteData(fn);
       gamesTable.grantReadWriteData(fn);
+      leaderboardTable.grantReadWriteData(fn);
     }
 
     // --- WebSocket API -----------------------------------------------------
@@ -124,6 +135,9 @@ export class QuickeyeStack extends cdk.Stack {
     wsApi.addRoute("submitMatch", {
       integration: new WebSocketLambdaIntegration("SubmitMatchInt", submitMatchFn),
     });
+    wsApi.addRoute("queryLeaderboard", {
+      integration: new WebSocketLambdaIntegration("QueryLeaderboardInt", queryLeaderboardFn),
+    });
 
     const stage = new apigwv2.WebSocketStage(this, "ProdStage", {
       webSocketApi: wsApi,
@@ -141,6 +155,7 @@ export class QuickeyeStack extends cdk.Stack {
       joinGameFn,
       startGameFn,
       submitMatchFn,
+      queryLeaderboardFn,
     ]) {
       wsApi.grantManageConnections(fn);
     }
@@ -156,6 +171,9 @@ export class QuickeyeStack extends cdk.Stack {
     });
     new cdk.CfnOutput(this, "GamesTableName", {
       value: gamesTable.tableName,
+    });
+    new cdk.CfnOutput(this, "LeaderboardTableName", {
+      value: leaderboardTable.tableName,
     });
   }
 }
