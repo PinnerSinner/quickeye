@@ -162,25 +162,95 @@
   border-bottom: none;
 }
 
-.game-over {
+.game-over-overlay {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  text-align: center;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
   z-index: 1000;
 }
 
-.game-over h2 {
-  color: #27ae60;
-  font-size: 2rem;
+.game-over {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  max-width: 500px;
+  width: 90%;
 }
 
-.game-over p {
-  color: #555;
-  margin-top: 0.5rem;
+.game-over h2 {
+  color: #667eea;
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.final-scores {
+  margin: 2rem 0;
+  text-align: left;
+}
+
+.final-scores h3 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.score-row {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.score-row.winner {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  font-weight: bold;
+}
+
+.score-row .medal {
+  font-size: 1.5rem;
+  margin-right: 1rem;
+  min-width: 30px;
+}
+
+.score-row .name {
+  flex: 1;
+  color: #333;
+}
+
+.score-row .score {
+  color: #667eea;
+  font-weight: bold;
+  font-size: 1.3rem;
+}
+
+.game-over button {
+  background: linear-gradient(135deg, #27ae60 0%, #16a085 100%);
+  color: white;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.2s;
+  margin-top: 1rem;
+}
+
+.game-over button:hover {
+  transform: translateY(-2px);
+}
+
+.game-over button:active {
+  transform: translateY(0);
 }

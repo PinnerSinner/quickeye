@@ -140,16 +140,33 @@ export function GameScreen({
       </div>
 
       {state.status === "finished" && (
-        <div className="game-over">
-          <h2>Game Over!</h2>
-          <p>
-            Winner:{" "}
-            {
-              state.players.reduce((a, b) =>
-                a.score > b.score ? a : b
-              ).name
-            }
-          </p>
+        <div className="game-over-overlay">
+          <div className="game-over">
+            <h2>🎉 Game Over!</h2>
+            <div className="final-scores">
+              <h3>Final Scores</h3>
+              {state.players
+                .sort((a, b) => b.score - a.score)
+                .map((player, idx) => (
+                  <div
+                    key={player.playerId}
+                    className={`score-row ${idx === 0 ? "winner" : ""}`}
+                  >
+                    <span className="medal">
+                      {idx === 0 ? "🏆" : idx === 1 ? "🥈" : "🥉"}
+                    </span>
+                    <span className="name">
+                      {player.name}
+                      {player.playerId === playerId && " (you)"}
+                    </span>
+                    <span className="score">{player.score}</span>
+                  </div>
+                ))}
+            </div>
+            <button onClick={() => window.location.reload()}>
+              Play Again
+            </button>
+          </div>
         </div>
       )}
     </div>
