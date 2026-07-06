@@ -51,14 +51,27 @@ See [CLAUDE.md](CLAUDE.md) for the project brief and locked-in decisions.
 - Message type safety via @quickeye/shared discriminated unions
 - Screen routing logic covers all game states
 
+### Symbol rendering & deck integration
+
+- `src/utils/deck.ts` — generates deck once on import, exports helpers:
+  - `getCardSymbols(cardId)` — returns 8 symbol IDs for a card
+  - `findMatchingSymbol(centerCardId, playerCardId)` — finds the one match
+  - `getSymbolEmoji(symbolId)` — maps ID to emoji
+- GameScreen now renders actual symbols from the deck
+- Matching symbol is highlighted with green border
+- Click handler sends `submitMatch` to server
+
+### Module format fix
+
+- Shared now emits ES2020 modules (for Vite)
+- Server/Lambda still works: esbuild in CDK transpiles ES → CommonJS
+
 ### Known gaps / next steps
 
-- **Symbol rendering** — currently placeholder emoji, needs deck integration
-- **Matching logic** — GameScreen needs to highlight/find actual matching symbol
 - **Timer UI** — countdown bar not wired yet (GAME_CONFIG.roundCountdownSeconds)
-- **Deck access in client** — will need `generateDeck` + `findMatch` from shared
-- **Deployment** — UI ready, needs Amplify pointing to /client/dist
+- **Deployment** — client build ready (dist/), needs Amplify pointing to /client/dist
 - **Error handling** — basic alerts, no reconnection/retry yet
+- **Speed mechanic** — shrinking/rotating symbols as timer counts down (deferred)
 
 ### How to run locally
 
@@ -67,6 +80,15 @@ npm -w client run dev     # Vite dev server on :3000
 ```
 
 Then point it at a deployed WebSocket API URL.
+
+### Next: deploy and validate end-to-end
+
+The entire stack is now ready:
+1. Backend is built, synthesizes, and test-client verifies logic
+2. Client is built and ready for deployment
+3. All three packages (shared, server, client) integrate correctly
+
+Deploy with `cdk deploy` and test the full game flow.
 
 ---
 
