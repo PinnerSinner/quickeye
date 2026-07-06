@@ -35,16 +35,10 @@ export function GameScreen({
     });
   }, [centerCardId, playerCardId, state.players.length, state.status]);
 
+  // TODO: Fix findMatch to work with client deck structure
+  // For now, disable matching symbol highlighting so the game can render
   useEffect(() => {
-    if (
-      centerCardId !== null &&
-      centerCardId !== undefined &&
-      playerCardId !== null &&
-      playerCardId !== undefined
-    ) {
-      const symbolId = findMatchingSymbol(centerCardId, playerCardId);
-      setMatchingSymbolId(symbolId);
-    }
+    setMatchingSymbolId(null);
   }, [centerCardId, playerCardId]);
 
   const centerSymbols =
