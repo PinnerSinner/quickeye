@@ -61,10 +61,56 @@ Goal: Transform "kinda works" → "actually fun to play"
    - Players list with subtle separators
    - Secondary buttons with gray gradients
 
-### Next Steps
-- Implement speed mechanic (shrinking/rotating symbols as timer runs)
-- Wire browse games to server API
+8. **Connect Screen** — Polish first-time user experience
+   - Large, bold title; improved input styling
+   - Gradient backgrounds, shadows, refined button
+   - Better error presentation with borders
+
+---
+
+## Summary: Polish Phase Complete ✓
+
+The game now feels **substantially more polished** than the initial placeholder:
+- **Visual Consistency**: All screens use the same color palette, typography, and interaction patterns
+- **Feedback**: Every interaction (hover, click, timer) has satisfying visual feedback
+- **Polish**: Shadows, gradients, smooth animations, and proper spacing throughout
+- **Core Mechanic**: Speed mechanic implemented — symbols shrink as timer runs, increasing difficulty
+- **UX**: Browse games removes copy-paste friction; persistent names survive reconnections
+
+## Known Issues & Next Steps
+
+### Server-Side (Deferred)
+- **Card Symbol Mismatch**: Each player sees different symbols on same card ID
+  - Root cause: Version mismatch between deployed server and client
+  - Impact: Game unplayable for real matching (currently bypassed)
+  - Fix needed: Redeploy server with matching deck algorithm
+
+### Client-Side (High Priority)
+- Wire browse games to real server API (currently mocked)
+  - Requires: Server broadcasts active games on connection
+  - Client: Query for games, refresh on state updates
+
+### Optional Polish
 - Real artwork to replace emoji symbols
+- Global leaderboard (requires backend tracking)
+- Reconnection handling (currently page reload)
+- Card rotation/skew animations (speed mechanic v2)
+
+## File Structure (Current)
+```
+client/
+  src/
+    screens/
+      ConnectScreen.tsx / .css  — Initial connection
+      LobbyScreen.tsx / .css    — Create/Join/Browse games
+      GameScreen.tsx / .css     — Active game play, timer, scoring
+    App.tsx                      — Main app, routing, state management
+    hooks/
+      useWebSocket.ts           — WebSocket connection
+      useGame.ts                — Game state management
+    utils/
+      deck.ts                   — Deck generation + symbol emojis
+```
 
 ### Known Issues (Deferred)
 - Card symbol mismatch between players (server/client deck version)
