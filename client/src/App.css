@@ -73,9 +73,10 @@ body {
   width: 100%;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
+  min-height: 100vh;
   padding: 2rem 1rem;
-  background: var(--color-bg);
+  background: #000000;
 }
 
 h1 {
