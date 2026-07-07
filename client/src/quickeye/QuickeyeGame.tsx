@@ -91,6 +91,8 @@ interface QState {
   playerId: string | null;
   serverError: string | null;
   browseCodes: { gameId: string; host: string; playerCount: number }[];
+  quitConfirm: boolean;
+  mousePos: [number, number];
 }
 
 export interface QuickeyeGameProps {
@@ -160,6 +162,8 @@ function initialState(): QState {
     playerId: null,
     serverError: null,
     browseCodes: [], // Games fetched from server
+    quitConfirm: false,
+    mousePos: [0, 0],
   };
 }
 
@@ -622,9 +626,21 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
 
   // ---------- navigation ----------
   const goHome = () => {
+    if (st.view === "playing") {
+      patch({ quitConfirm: true });
+      return;
+    }
     audioRef.current?.navigate();
     stopTimers();
     patch({ view: "home" });
+  };
+  const confirmQuit = () => {
+    audioRef.current?.navigate();
+    stopTimers();
+    patch({ view: "home", quitConfirm: false });
+  };
+  const cancelQuit = () => {
+    patch({ quitConfirm: false });
   };
   const goSolo = () => {
     audioRef.current?.navigate();
@@ -932,6 +948,15 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // mouse tracking for logo eye animation
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      patch({ mousePos: [e.clientX, e.clientY] });
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
   // view transitions (mirrors componentDidUpdate)
   useEffect(() => {
     const v = st.view;
@@ -1015,60 +1040,74 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     discSize: number,
     irisSize: number,
     tail: [number, number],
-    withPupil: boolean
-  ) => (
-    <div style={{ position: "relative", width: discSize, height: discSize }}>
-      <div
-        style={{
-          width: discSize,
-          height: discSize,
-          borderRadius: "50%",
-          background: "#fff",
-          border: `${Math.max(3, Math.round(discSize * 0.1))}px solid #000`,
-          boxSizing: "border-box",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          animation: "qe-blink 3.4s ease-in-out infinite",
-        }}
-      >
+    withPupil: boolean,
+    tracking: boolean = false
+  ) => {
+    let irisOffset = [0, 0];
+    if (tracking && withPupil) {
+      const maxOffset = (discSize - irisSize) / 2 * 0.6;
+      const dx = st.mousePos[0] - (discSize / 2);
+      const dy = st.mousePos[1] - (discSize / 2);
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      const angle = Math.atan2(dy, dx);
+      irisOffset = [Math.cos(angle) * maxOffset, Math.sin(angle) * maxOffset];
+    }
+    return (
+      <div style={{ position: "relative", width: discSize, height: discSize }}>
         <div
           style={{
-            width: irisSize,
-            height: irisSize,
+            width: discSize,
+            height: discSize,
             borderRadius: "50%",
-            background: iris,
-            transition: "background 240ms ease",
+            background: "#fff",
+            border: `${Math.max(3, Math.round(discSize * 0.1))}px solid #000`,
+            boxSizing: "border-box",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            animation: "qe-blink 3.4s ease-in-out infinite",
+            overflow: "hidden",
           }}
         >
-          {withPupil && (
-            <div
-              style={{
-                width: Math.round(irisSize * 0.37),
-                height: Math.round(irisSize * 0.37),
-                borderRadius: "50%",
-                background: "#121212",
-              }}
-            />
-          )}
+          <div
+            style={{
+              width: irisSize,
+              height: irisSize,
+              borderRadius: "50%",
+              background: iris,
+              transition: tracking ? "none" : "background 240ms ease",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transform: tracking ? `translate(${irisOffset[0]}px, ${irisOffset[1]}px)` : undefined,
+            }}
+          >
+            {withPupil && (
+              <div
+                style={{
+                  width: Math.round(irisSize * 0.37),
+                  height: Math.round(irisSize * 0.37),
+                  borderRadius: "50%",
+                  background: "#121212",
+                }}
+              />
+            )}
+          </div>
         </div>
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            width: tail[0],
+            height: tail[1],
+            background: "#000",
+            transform: "rotate(42deg)",
+          }}
+        />
       </div>
-      <div
-        style={{
-          position: "absolute",
-          bottom: 0,
-          right: 0,
-          width: tail[0],
-          height: tail[1],
-          background: "#000",
-          transform: "rotate(42deg)",
-        }}
-      />
-    </div>
-  );
+    );
+  };
 
   const smallHeader = (title: string, onBack: () => void) => (
     <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22, justifyContent: "space-between" }}>
@@ -1807,7 +1846,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                   cursor: "pointer",
                 }}
               >
-                {logoMark(100, 40, [40, 13], true)}
+                {logoMark(100, 40, [40, 13], true, true)}
                 <div
                   style={{
                     font: "900 48px/1 'Outfit',sans-serif",
@@ -2288,7 +2327,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                       style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}
                       title="Back to home"
                     >
-                      {logoMark(48, 19, [19, 6], true)}
+                      {logoMark(48, 19, [19, 6], true, true)}
                       <div style={{ display: "flex", flexDirection: "column" }}>
                         <div
                           style={{
@@ -2330,25 +2369,27 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                       >
                         ‹ Quit
                       </button>
-                      <div style={{ position: "relative", display: "flex", alignItems: "baseline", gap: 6 }}>
+                      <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                         <div
                           style={{
-                            font: "900 30px 'Outfit',sans-serif",
+                            font: "900 48px 'Outfit',sans-serif",
                             color: danger ? "#D02020" : "#fff",
                             animation: danger ? "qe-num-pulse 0.6s ease-in-out infinite" : "none",
+                            lineHeight: 1,
+                            textShadow: "0 2px 8px rgba(0,0,0,0.3)",
                           }}
                         >
-                          {isRace ? st.elapsed : st.timeLeft}
+                          {isRace ? st.elapsed.toFixed(1) : st.timeLeft}
                         </div>
                         <div
                           style={{
-                            font: "700 12px 'Outfit',sans-serif",
+                            font: "700 11px 'Outfit',sans-serif",
                             color: danger ? "#D02020" : "#888",
                             textTransform: "uppercase",
-                            letterSpacing: "2px",
+                            letterSpacing: "1.5px",
                           }}
                         >
-                          {isRace ? `sec · ${st.scores.you}/7` : "sec"}
+                          {isRace ? `sec · ${st.scores.you}/7` : "sec remaining"}
                         </div>
                         {showPlus ? (
                           <div
@@ -2426,6 +2467,83 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                   </div>
                   {liveLeaderboard()}
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===== QUIT CONFIRMATION ===== */}
+        {st.quitConfirm && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.6)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 10000,
+            }}
+            onClick={cancelQuit}
+          >
+            <div
+              style={{
+                background: "#fff",
+                border: "4px solid #000",
+                borderRadius: "8px",
+                padding: "32px",
+                maxWidth: 400,
+                boxShadow: "12px 12px 0 0 #000",
+                textAlign: "center",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                style={{
+                  font: "900 24px 'Outfit',sans-serif",
+                  marginBottom: 16,
+                  color: "#121212",
+                }}
+              >
+                Quit Game?
+              </div>
+              <div
+                style={{
+                  font: "500 14px 'Outfit',sans-serif",
+                  color: "#666",
+                  marginBottom: 24,
+                }}
+              >
+                Your progress will be lost. Are you sure?
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <button
+                  onClick={cancelQuit}
+                  style={{
+                    padding: "12px",
+                    font: "700 14px 'Outfit',sans-serif",
+                    background: "#f0f0f0",
+                    border: "2px solid #000",
+                    cursor: "pointer",
+                    borderRadius: "4px",
+                  }}
+                >
+                  Keep Playing
+                </button>
+                <button
+                  onClick={confirmQuit}
+                  style={{
+                    padding: "12px",
+                    font: "700 14px 'Outfit',sans-serif",
+                    background: "#D02020",
+                    color: "#fff",
+                    border: "2px solid #000",
+                    cursor: "pointer",
+                    borderRadius: "4px",
+                  }}
+                >
+                  Quit
+                </button>
               </div>
             </div>
           </div>
