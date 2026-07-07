@@ -93,6 +93,8 @@ interface QState {
   browseCodes: { gameId: string; host: string; playerCount: number }[];
   quitConfirm: boolean;
   mousePos: [number, number];
+  eyePokes: number;
+  eyeExpression: "normal" | "ouch" | "annoyed" | "angry" | "furious" | "middle-finger";
 }
 
 export interface QuickeyeGameProps {
@@ -164,6 +166,8 @@ function initialState(): QState {
     browseCodes: [], // Games fetched from server
     quitConfirm: false,
     mousePos: [0, 0],
+    eyePokes: 0,
+    eyeExpression: "normal",
   };
 }
 
@@ -642,6 +646,29 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   const cancelQuit = () => {
     patch({ quitConfirm: false });
   };
+  const pokeEye = () => {
+    const newPokes = stateRef.current.eyePokes + 1;
+    let expression: QState["eyeExpression"] = "normal";
+    if (newPokes === 1) {
+      audioRef.current?.menuClick();
+      expression = "ouch";
+    } else if (newPokes === 2) {
+      audioRef.current?.errorSound();
+      expression = "annoyed";
+    } else if (newPokes === 3) {
+      audioRef.current?.errorSound();
+      expression = "angry";
+    } else if (newPokes === 4) {
+      audioRef.current?.errorSound();
+      expression = "furious";
+    } else if (newPokes >= 5) {
+      audioRef.current?.chunk(1);
+      expression = "middle-finger";
+    }
+    patch({ eyePokes: newPokes, eyeExpression: expression });
+    clearTimeout(saveTORef.current);
+    saveTORef.current = window.setTimeout(() => patch({ eyePokes: 0, eyeExpression: "normal" }), 2800);
+  };
   const goSolo = () => {
     audioRef.current?.navigate();
     patch({ view: "solo" });
@@ -1041,9 +1068,37 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     irisSize: number,
     tail: [number, number],
     withPupil: boolean,
-    tracking: boolean = false
+    tracking: boolean = false,
+    interactive: boolean = false
   ) => {
+    const expr = st.eyeExpression;
+    const isMiddleFinger = expr === "middle-finger";
+
+    if (isMiddleFinger) {
+      return (
+        <div
+          style={{
+            width: discSize,
+            height: discSize,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: discSize * 0.8,
+            cursor: interactive ? "pointer" : "default",
+            animation: expr === "furious" ? "qe-shake 0.2s ease-in-out" : undefined,
+          }}
+          onClick={interactive ? pokeEye : undefined}
+        >
+          🖕
+        </div>
+      );
+    }
+
     let irisOffset = [0, 0];
+    let irisScale = 1;
+    let pupilScale = 1;
+    let eyeLidTop = 0;
+
     if (tracking && withPupil) {
       const maxOffset = (discSize - irisSize) / 2 * 0.6;
       const dx = st.mousePos[0] - (discSize / 2);
@@ -1052,8 +1107,34 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
       const angle = Math.atan2(dy, dx);
       irisOffset = [Math.cos(angle) * maxOffset, Math.sin(angle) * maxOffset];
     }
+
+    if (expr === "ouch") {
+      irisScale = 0.7;
+      pupilScale = 0.5;
+      eyeLidTop = -3;
+    } else if (expr === "annoyed") {
+      eyeLidTop = -5;
+      pupilScale = 0.3;
+    } else if (expr === "angry") {
+      eyeLidTop = -8;
+      pupilScale = 0.2;
+      irisScale = 0.8;
+    } else if (expr === "furious") {
+      eyeLidTop = -10;
+      pupilScale = 0.1;
+      irisScale = 0.6;
+    }
+
     return (
-      <div style={{ position: "relative", width: discSize, height: discSize }}>
+      <div
+        style={{
+          position: "relative",
+          width: discSize,
+          height: discSize,
+          cursor: interactive ? "pointer" : "default",
+        }}
+        onClick={interactive ? pokeEye : undefined}
+      >
         <div
           style={{
             width: discSize,
@@ -1067,15 +1148,31 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             justifyContent: "center",
             animation: "qe-blink 3.4s ease-in-out infinite",
             overflow: "hidden",
+            position: "relative",
           }}
         >
+          {eyeLidTop !== 0 && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: discSize * 0.35,
+                background: "#000",
+                transform: `translateY(${eyeLidTop}px)`,
+                zIndex: 10,
+                transition: "transform 200ms ease",
+              }}
+            />
+          )}
           <div
             style={{
-              width: irisSize,
-              height: irisSize,
+              width: irisSize * irisScale,
+              height: irisSize * irisScale,
               borderRadius: "50%",
               background: iris,
-              transition: tracking ? "none" : "background 240ms ease",
+              transition: tracking ? "none" : "background 240ms ease, width 200ms ease, height 200ms ease",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -1085,10 +1182,11 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             {withPupil && (
               <div
                 style={{
-                  width: Math.round(irisSize * 0.37),
-                  height: Math.round(irisSize * 0.37),
+                  width: Math.round(irisSize * 0.37 * pupilScale),
+                  height: Math.round(irisSize * 0.37 * pupilScale),
                   borderRadius: "50%",
                   background: "#121212",
+                  transition: "width 200ms ease, height 200ms ease",
                 }}
               />
             )}
@@ -1846,7 +1944,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                   cursor: "pointer",
                 }}
               >
-                {logoMark(100, 40, [40, 13], true, true)}
+                {logoMark(100, 40, [40, 13], true, true, true)}
                 <div
                   style={{
                     font: "900 48px/1 'Outfit',sans-serif",
