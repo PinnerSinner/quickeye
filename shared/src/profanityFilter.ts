@@ -6,16 +6,20 @@
  */
 
 const PROFANITIES = [
-  // Only multi-word phrases that are clearly intentional
+  // Only multi-word phrases that are clearly intentional (letters only, no regex special chars)
   'asshole', 'bastard', 'bitch', 'bullshit', 'damn', 'dammit', 'damnit',
   'fucked', 'fuckface', 'fucking', 'goddamn', 'goddammed', 'horseshit',
   'motherfucker', 'shite', 'shithead', 'shitty', 'whore', 'asshead',
   'bitches', 'bitching', 'crap', 'crappy', 'fart', 'frick', 'frigg', 'pissed',
-  'slut', 'retard', 'retarded', 'twat', 'cunt', 'faggot',
-  // Leetspeak/symbol variations of above
-  'a55hole', '@sshole', 'b1tch', 'biatch', 'b!tch', 'sh1thead', 'sh!thead',
-  'f@g', 'f*ck', 'fvck', 'f**k', 'fcuk',
+  'slut', 'retard', 'retarded', 'twat', 'cunt', 'faggot', 'piss',
 ];
+
+/**
+ * Escape regex special characters so they're treated as literals
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 export function containsProfanity(text: string): boolean {
   if (!text) return false;
@@ -25,8 +29,9 @@ export function containsProfanity(text: string): boolean {
   // Only check for whole-word matches using word boundaries
   // This avoids false positives like "Marcus" or "Frederick"
   for (const word of PROFANITIES) {
-    // Use word boundaries to match only complete words
-    const regex = new RegExp(`\\b${word}\\b`, 'i');
+    // Escape regex special characters and use word boundaries
+    const escaped = escapeRegex(word);
+    const regex = new RegExp(`\\b${escaped}\\b`, 'i');
     if (regex.test(normalized)) {
       return true;
     }

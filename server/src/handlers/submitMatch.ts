@@ -83,7 +83,7 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
     if (outcome.gameOver) {
       const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
       const timestamp = Math.floor(Date.now() / 1000);
-      const gameMode = "time-attack-60"; // TODO: track game mode in GameState
+      const gameMode = outcome.state.gameMode || "time-attack-60";
 
       // Save each player's score to daily and all-time leaderboards
       const leaderboardSaves = outcome.state.players.map((player) => {
