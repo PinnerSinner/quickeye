@@ -57,11 +57,12 @@
 
 body {
   font-family: 'Outfit', sans-serif;
-  background: var(--color-bg);
+  background: #0d0d0d;
   min-height: 100vh;
   margin: 0;
   padding: 0;
   color: var(--color-fg);
+  overflow: hidden;
 }
 
 #root {
@@ -69,7 +70,17 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: 1rem;
+}
+
+/* Full-viewport dark stage that hosts the Quickeye game surface. */
+.qe-app-shell {
+  position: fixed;
+  inset: 0;
+  background: #0d0d0d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .container {

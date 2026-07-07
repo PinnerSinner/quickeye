@@ -1,0 +1,198 @@
+/* Quickeye game surface — keyframes + interaction classes, ported from the prototype. */
+
+.qe-root {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: scale(1.16);
+  transform-origin: center center;
+  font-family: "Outfit", sans-serif;
+}
+
+.qe-bg {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.qe-over-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.qe-input:focus {
+  background: #f0c020 !important;
+  outline: none;
+}
+
+/* springy hover for primary buttons/cards */
+.qhov {
+  transition: transform 0.16s cubic-bezier(0.34, 1.7, 0.45, 1), box-shadow 0.16s ease;
+}
+.qhov:hover {
+  transform: translate(-3px, -4px) rotate(-1.4deg) scale(1.045);
+}
+.qhov:active {
+  transform: translate(1px, 2px) scale(0.98);
+}
+
+/* game tile hover */
+.qtile {
+  transition: transform 0.13s cubic-bezier(0.34, 1.7, 0.45, 1);
+}
+.qtile:hover {
+  transform: scale(1.1) rotate(-3deg);
+  z-index: 4;
+}
+
+/* logo hover */
+.qlogo {
+  transition: transform 0.18s cubic-bezier(0.34, 1.7, 0.45, 1);
+}
+.qlogo:hover {
+  transform: scale(1.06) rotate(-2deg);
+}
+
+@keyframes qe-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.08);
+  }
+}
+@keyframes qe-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+@keyframes qe-bar-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes qe-num-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.16);
+  }
+}
+@keyframes qe-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+@keyframes qe-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes qe-screenshake {
+  8% {
+    transform: translate(-9px, 6px) rotate(-1deg);
+  }
+  22% {
+    transform: translate(8px, -6px) rotate(0.9deg);
+  }
+  38% {
+    transform: translate(-7px, -4px) rotate(-0.6deg);
+  }
+  54% {
+    transform: translate(7px, 5px) rotate(0.6deg);
+  }
+  70% {
+    transform: translate(-5px, 3px) rotate(-0.35deg);
+  }
+  86% {
+    transform: translate(4px, -2px) rotate(0.2deg);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+@keyframes qe-glowpulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.06);
+  }
+}
+@keyframes qe-reveal {
+  0%,
+  100% {
+    box-shadow: 0 0 0 4px #22c55e, 0 0 18px 4px rgba(34, 197, 94, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 5px #22c55e, 0 0 28px 9px rgba(34, 197, 94, 0.9);
+  }
+}
+@keyframes qe-shard {
+  to {
+    transform: translate(var(--tx), var(--ty)) scale(0.2);
+    opacity: 0;
+  }
+}
+@keyframes qe-tokenpulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.09);
+  }
+}
+@keyframes qe-floatup {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
