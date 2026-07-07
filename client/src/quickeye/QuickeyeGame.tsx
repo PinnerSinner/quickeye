@@ -90,8 +90,7 @@ interface QState {
   gameId: string | null;
   playerId: string | null;
   serverError: string | null;
-  soundEnabled: boolean;
-  browseCodes: string[];
+  browseCodes: { gameId: string; host: string; playerCount: number }[];
 }
 
 export interface QuickeyeGameProps {
@@ -105,6 +104,8 @@ export interface QuickeyeGameProps {
   onSubmitMatch?: (gameId: string, symbolId: number) => void;
   /** Called to query leaderboard data from server. */
   onQueryLeaderboard?: (gameMode: string) => void;
+  /** Called to query available games from server. */
+  onQueryGames?: () => void;
   /** A server-issued room code to display on the Create screen, if available. */
   serverRoomCode?: string | null;
   /** Server game state (multiplayer games). */
@@ -115,6 +116,8 @@ export interface QuickeyeGameProps {
   error?: string | null;
   /** Leaderboard data from server. */
   leaderboards?: Record<string, any[]>;
+  /** Available games from server to join. */
+  availableGames?: Array<{ gameId: string; host: string; playerCount: number; gameMode: string }>;
 }
 
 const OPP_INTERVAL_MS = 3000; // "Normal" opponent pace
@@ -156,8 +159,7 @@ function initialState(): QState {
     gameId: null,
     playerId: null,
     serverError: null,
-    soundEnabled: true,
-    browseCodes: ["7241", "5893", "4156"], // Static room codes for browse list
+    browseCodes: [], // Games fetched from server
   };
 }
 
@@ -617,13 +619,6 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     audioRef.current?.stopBGM();
   };
 
-  const toggleSound = () => {
-    patch((s) => {
-      const newEnabled = !s.soundEnabled;
-      audioRef.current!.enabled = newEnabled;
-      return { soundEnabled: newEnabled };
-    });
-  };
 
   // ---------- navigation ----------
   const goHome = () => {
@@ -642,6 +637,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   const goBrowse = () => {
     audioRef.current?.navigate();
     patch({ view: "browse" });
+    props.onQueryGames?.();
   };
   const goCreate = () => {
     audioRef.current?.navigate();
@@ -1098,22 +1094,6 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
           </div>
         </div>
       </div>
-      <button className="qhov" onClick={toggleSound} style={{
-        width: 40,
-        height: 40,
-        borderRadius: "50%",
-        background: st.soundEnabled ? "#22C55E" : "#666",
-        border: "3px solid #000",
-        color: "#fff",
-        font: "900 18px 'Outfit',sans-serif",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flex: "none",
-      }}>
-        {st.soundEnabled ? "♪" : "✕"}
-      </button>
     </div>
   );
 
@@ -1183,20 +1163,30 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   };
 
   const browseList = () => {
-    const rooms = [
-      { c: st.browseCodes[0], h: OPP_POOL[0], n: 1 },
-      { c: st.browseCodes[1], h: OPP_POOL[3], n: 2 },
-      { c: st.browseCodes[2], h: OPP_POOL[6], n: 1 },
-    ];
-    const joinBrowseGame = (code: string) => {
+    const games = props.availableGames || [];
+    if (games.length === 0) {
+      return (
+        <div
+          style={{
+            textAlign: "center",
+            color: "#666",
+            font: "600 1rem 'Outfit',sans-serif",
+            padding: "2rem",
+          }}
+        >
+          No games available. Create one or check back later.
+        </div>
+      );
+    }
+    const joinBrowseGame = (gameId: string) => {
       audioRef.current?.menuClick();
-      props.onJoinMultiplayer?.(code, stateRef.current.playerName || "You");
+      props.onJoinMultiplayer?.(gameId, stateRef.current.playerName || "You");
     };
-    return rooms.map((rm, i) => (
+    return games.map((game, i) => (
       <button
         key={i}
         className="qhov"
-        onClick={() => joinBrowseGame(rm.c)}
+        onClick={() => joinBrowseGame(game.gameId)}
         style={{
           background: "#fff",
           border: "4px solid #000",
@@ -1217,7 +1207,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             letterSpacing: "2px",
           }}
         >
-          {rm.c}
+          {game.gameId}
         </span>
         <span
           style={{
@@ -1227,7 +1217,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             color: "#121212",
           }}
         >
-          Host: {rm.h} · {rm.n} player{rm.n > 1 ? "s" : ""}
+          Host: {game.host} · {game.playerCount} player{game.playerCount > 1 ? "s" : ""}
         </span>
         <span
           style={{
@@ -2152,32 +2142,41 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
         {st.view === "lobby" && (
           <div style={panelStyle(520)}>
             {smallHeader("Waiting Room", goMulti)}
-            <div style={{ textAlign: "center", marginBottom: 30 }}>
+            <div style={{ textAlign: "center", marginBottom: 20 }}>
               <div style={{ font: "500 13px 'Outfit',sans-serif", color: "#999", marginBottom: 10 }}>
                 GAME CODE
               </div>
               <div style={{ font: "900 3.5rem 'Outfit',sans-serif", color: "#F0C020", letterSpacing: "12px", marginBottom: 20 }}>
-                {st.roomCode}
+                {props.gameState?.gameId || st.roomCode}
               </div>
-              <div style={{ font: "500 13px/1.5 'Outfit',sans-serif", color: "#bbb" }}>
-                {st.isMultiplayer && st.playerId ? "Waiting for host to start..." : "Waiting for players..."}
+              <div style={{ font: "500 13px 'Outfit',sans-serif", color: "#999", marginBottom: 10 }}>
+                PLAYERS
               </div>
+              <div style={{ font: "500 13px/1.8 'Outfit',sans-serif", color: "#bbb", marginBottom: 20 }}>
+                {props.gameState?.players?.map((p: any) => p.name).join(", ") || "Waiting for players..."}
+              </div>
+              {st.playerId !== props.gameState?.hostId && (
+                <div style={{ font: "500 13px/1.5 'Outfit',sans-serif", color: "#bbb" }}>
+                  Waiting for host to start...
+                </div>
+              )}
             </div>
-            <button
-              className="qhov"
-              onClick={() => {
-                audioRef.current?.menuClick();
-                props.onStartGame?.();
-              }}
-              style={primaryWide}
-              disabled={!st.isMultiplayer}
-            >
-              Start Game
-            </button>
+            {st.playerId === props.gameState?.hostId && (
+              <button
+                className="qhov"
+                onClick={() => {
+                  audioRef.current?.menuClick();
+                  props.onStartGame?.();
+                }}
+                style={primaryWide}
+              >
+                Start Game
+              </button>
+            )}
             <button
               className="qhov"
               onClick={goMulti}
-              style={{...primaryWide, background: "#666", marginTop: 10}}
+              style={{...primaryWide, background: "#666", marginTop: st.playerId === props.gameState?.hostId ? 10 : 0}}
             >
               Back to Menu
             </button>

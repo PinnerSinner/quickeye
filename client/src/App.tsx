@@ -36,6 +36,9 @@ export default function App() {
     race: [],
     power: [],
   });
+  const [availableGames, setAvailableGames] = useState<
+    Array<{ gameId: string; host: string; playerCount: number; gameMode: string }>
+  >([]);
 
   useEffect(() => {
     const unsubJoined = ws.on("joined", (msg) => {
@@ -70,12 +73,17 @@ export default function App() {
       }));
     });
 
+    const unsubGamesList = ws.on("gamesList", (msg: any) => {
+      setAvailableGames(msg.games || []);
+    });
+
     return () => {
       unsubJoined();
       unsubStateUpdate();
       unsubMatchResult();
       unsubError();
       unsubLeaderboard();
+      unsubGamesList();
     };
   }, [ws]);
 
@@ -116,13 +124,30 @@ export default function App() {
     } as ClientMessage);
   };
 
+  const modeToGameMode = (clientMode: string) => {
+    const map: Record<string, string> = {
+      marathon: "time-attack-60",
+      race: "ten-rounds",
+      power: "difficulty-scaling",
+    };
+    return map[clientMode] || "time-attack-60";
+  };
+
   const handleQueryLeaderboard = (gameMode: string) => {
     if (!wsUrl) return;
+    const serverMode = modeToGameMode(gameMode);
     ws.send({
       action: "queryLeaderboard",
-      gameMode: gameMode as any,
+      gameMode: serverMode as any,
       period: "all-time",
       limit: 50,
+    } as ClientMessage);
+  };
+
+  const handleQueryGames = () => {
+    if (!wsUrl) return;
+    ws.send({
+      action: "queryGames",
     } as ClientMessage);
   };
 
@@ -134,11 +159,13 @@ export default function App() {
         onStartGame={handleStartGame}
         onSubmitMatch={handleSubmitMatch}
         onQueryLeaderboard={handleQueryLeaderboard}
+        onQueryGames={handleQueryGames}
         serverRoomCode={serverRoomCode}
         gameState={gameState}
         matchResult={matchResult}
         error={error}
         leaderboards={leaderboards}
+        availableGames={availableGames}
       />
     </div>
   );
