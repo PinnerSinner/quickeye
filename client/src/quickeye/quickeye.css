@@ -196,3 +196,51 @@
     transform: translateY(-20px);
   }
 }
+@keyframes qe-countdown-scale {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes qe-marathon-fill {
+  0%,
+  100% {
+    width: 0%;
+  }
+  50% {
+    width: 100%;
+  }
+}
+@keyframes qe-race-fill {
+  0% {
+    opacity: 0.2;
+    background: rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    opacity: 1;
+    background: currentColor;
+  }
+  100% {
+    opacity: 0.2;
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+@keyframes qe-power-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}

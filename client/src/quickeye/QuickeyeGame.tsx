@@ -95,6 +95,10 @@ interface QState {
   mousePos: [number, number];
   eyePokes: number;
   eyeExpression: "normal" | "ouch" | "annoyed" | "angry" | "furious" | "middle-finger";
+  countdownActive: boolean;
+  countdownNumber: 3 | 2 | 1 | null;
+  countdownPhase: "idle" | "counting" | "go" | "complete";
+  countdownStartTime: number;
 }
 
 export interface QuickeyeGameProps {
@@ -168,6 +172,10 @@ function initialState(): QState {
     mousePos: [0, 0],
     eyePokes: 0,
     eyeExpression: "normal",
+    countdownActive: false,
+    countdownNumber: null,
+    countdownPhase: "idle",
+    countdownStartTime: 0,
   };
 }
 
@@ -235,6 +243,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   const shTORef = useRef(0);
   const copyTORef = useRef(0);
   const saveTORef = useRef(0);
+  const countdownRef = useRef(0);
 
   // misc imperative state
   const t0Ref = useRef(0);
@@ -611,6 +620,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     clearInterval(tRef.current);
     clearInterval(bRef.current);
     clearTimeout(popTORef.current);
+    clearTimeout(countdownRef.current);
   };
 
   const playMenuMusic = () => {
@@ -783,6 +793,51 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     });
   };
 
+  const startCountdown = (mode: GameModeKey) => {
+    const now = Date.now();
+    patch({
+      countdownActive: true,
+      countdownPhase: "counting",
+      countdownStartTime: now,
+      countdownNumber: 3,
+    });
+
+    // Schedule countdown numbers and sounds
+    const times: Array<[number, 3 | 2 | 1 | "go"]> = [
+      [500, 3],
+      [1500, 2],
+      [2500, 1],
+      [3500, "go"],
+    ];
+
+    times.forEach(([delay, num]) => {
+      countdownRef.current = window.setTimeout(() => {
+        if (num === "go") {
+          audioRef.current?.countdownGo();
+          patch({ countdownNumber: null, countdownPhase: "go" });
+          // After GO completes, transition to actual gameplay
+          countdownRef.current = window.setTimeout(() => {
+            const isRace = mode === "race";
+            const state = stateRef.current;
+            patch({
+              countdownActive: false,
+              countdownPhase: "complete",
+              locked: false,
+            });
+            // Unlock game for play
+            tRef.current = window.setInterval(isRace ? tickUp : tick, 1000);
+            bRef.current = window.setInterval(botTick, OPP_INTERVAL_MS);
+            setTimeout(startParticles, 70);
+            playGameplayMusic();
+          }, 500);
+        } else {
+          audioRef.current?.countdownBeep(num);
+          patch({ countdownNumber: num });
+        }
+      }, delay);
+    });
+  };
+
   const begin = (mode: GameModeKey) => {
     audioRef.current?.ensure();
     stopTimers();
@@ -798,7 +853,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
       round: makeRound(mode),
       matchedId: null,
       wrongId: null,
-      locked: false,
+      locked: true,
       cullIdx: [],
       popIdx: [],
       tokenUsed: false,
@@ -807,9 +862,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
       revealUntil: 0,
       powerups: { pop: true, reveal: true, halve: true },
     });
-    tRef.current = window.setInterval(isRace ? tickUp : tick, 1000);
-    bRef.current = window.setInterval(botTick, OPP_INTERVAL_MS);
-    setTimeout(startParticles, 70);
+    startCountdown(mode);
   };
   const startMarathon = () => {
     audioRef.current?.menuClick();
@@ -1911,7 +1964,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
 
   // ============================ screen JSX ============================
   const isRace = st.mode === "race";
-  const d = st.mode === "power" ? tension : 0;
+  const d = tension;
   const revealActive = !!(st.revealUntil && Date.now() < st.revealUntil);
   const danger = isRace ? st.scores.you >= 6 : st.timeLeft <= 5;
   const barW = isRace ? (st.scores.you / 7) * 100 : (st.timeLeft / 60) * 100;
@@ -2112,34 +2165,24 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>
               <button className="qhov" onClick={startMarathon} style={modeCard("#D02020", "#fff")}>
-                <span style={{ width: 32, height: 32, borderRadius: "50%", background: "#fff" }} />
+                {marathonDiagram()}
                 <span style={modeTitle}>Marathon</span>
                 <span style={modeSub}>60 seconds</span>
                 <span style={{ ...modeDesc, opacity: 0.9 }}>Rack up as many matches as you can</span>
               </button>
               <button className="qhov" onClick={startRace} style={modeCard("#F0C020", "#121212")}>
-                <span
-                  style={{
-                    width: 0,
-                    height: 0,
-                    borderLeft: "16px solid transparent",
-                    borderRight: "16px solid transparent",
-                    borderBottom: "30px solid #121212",
-                  }}
-                />
+                {raceDiagram()}
                 <span style={modeTitle}>Race the Clock</span>
-                <span style={modeSub}>No timer</span>
+                <span style={modeSub}>First to 7</span>
                 <span style={{ ...modeDesc, opacity: 0.75 }}>
-                  Hit 7 matches as fast as you can. Beat your best time
+                  Hit 7 matches as fast as you can
                 </span>
               </button>
               <button className="qhov" onClick={startPower} style={modeCard("#1040C0", "#fff")}>
-                <span
-                  style={{ width: 30, height: 30, background: "#fff", transform: "rotate(45deg)", margin: "1px 0" }}
-                />
+                {powerPlayDiagram()}
                 <span style={modeTitle}>Power Play</span>
                 <span style={modeSub}>60 seconds</span>
-                <span style={{ ...modeDesc, opacity: 0.9 }}>Symbols shrink and fire. Powerups available</span>
+                <span style={{ ...modeDesc, opacity: 0.9 }}>Use power-ups to win fast</span>
               </button>
             </div>
           </div>
@@ -2647,6 +2690,97 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
           </div>
         )}
 
+        {/* ===== COUNTDOWN OVERLAY ===== */}
+        {st.countdownActive && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 1000,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              pointerEvents: st.countdownPhase === "complete" ? "none" : "auto",
+            }}
+          >
+            {/* Tutorial spotlight overlay - dims everything except spotlit area */}
+            {(st.countdownNumber === 3 || st.countdownNumber === 2 || st.countdownNumber === 1) && (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background:
+                    st.countdownNumber === 3
+                      ? "radial-gradient(ellipse 280px 220px at 50% 35%, transparent 0%, rgba(0,0,0,0.8) 100%)"
+                      : st.countdownNumber === 2
+                      ? "radial-gradient(ellipse 280px 220px at 50% 65%, transparent 0%, rgba(0,0,0,0.8) 100%)"
+                      : "radial-gradient(ellipse 350px 260px at 50% 50%, transparent 0%, rgba(0,0,0,0.8) 100%)",
+                  transition: "background 800ms ease-out",
+                  zIndex: 5,
+                  pointerEvents: "none",
+                }}
+              />
+            )}
+
+            {/* Background dimming */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "rgba(0, 0, 0, 0.5)",
+                opacity:
+                  st.countdownPhase === "go"
+                    ? 0
+                    : st.countdownNumber === 3
+                    ? 0.4
+                    : st.countdownNumber === 2
+                    ? 0.35
+                    : st.countdownNumber === 1
+                    ? 0.25
+                    : 0.5,
+                transition: "opacity 600ms ease-out",
+                zIndex: 3,
+                pointerEvents: "none",
+              }}
+            />
+            {st.countdownNumber !== null && (
+              <div
+                style={{
+                  fontSize: "clamp(8rem, 25vw, 18rem)",
+                  fontWeight: "900",
+                  fontFamily: "'Outfit', sans-serif",
+                  color:
+                    st.countdownNumber === 3
+                      ? "#D02020"
+                      : st.countdownNumber === 2
+                      ? "#F0C020"
+                      : "#3366FF",
+                  textShadow: "0 0 40px rgba(0, 0, 0, 0.8)",
+                  animation: "qe-countdown-scale 0.6s cubic-bezier(0.34, 1.2, 0.5, 1)",
+                  zIndex: 1,
+                }}
+              >
+                {st.countdownNumber}
+              </div>
+            )}
+            {st.countdownPhase === "go" && (
+              <div
+                style={{
+                  fontSize: "clamp(6rem, 20vw, 14rem)",
+                  fontWeight: "900",
+                  fontFamily: "'Outfit', sans-serif",
+                  color: "#22C55E",
+                  textShadow: "0 0 50px rgba(34, 197, 94, 0.6)",
+                  animation: "qe-countdown-scale 0.8s cubic-bezier(0.34, 1.2, 0.5, 1)",
+                  zIndex: 1,
+                }}
+              >
+                GO!
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ===== GAME OVER ===== */}
         {st.view === "over" && (
           <div
@@ -2833,6 +2967,116 @@ const yellowMenuBtn: CSSProperties = { ...darkMenuBtn, background: "#F0C020", co
 function dot(color: string): CSSProperties {
   return { width: 10, height: 10, borderRadius: "50%", background: color };
 }
+// Mode diagram components
+const marathonDiagram = () => (
+  <div
+    style={{
+      width: "100%",
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      padding: "8px 0",
+    }}
+  >
+    <div
+      style={{
+        flex: 1,
+        height: 8,
+        background: "rgba(255,255,255,0.3)",
+        border: "1px solid rgba(255,255,255,0.8)",
+        borderRadius: 4,
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          height: "100%",
+          background: "currentColor",
+          width: "50%",
+          animation: "qe-marathon-fill 2s ease-in-out infinite",
+        }}
+      />
+    </div>
+    <div style={{ font: "700 11px 'Outfit',sans-serif", whiteSpace: "nowrap" }}>60s</div>
+  </div>
+);
+
+const raceDiagram = () => (
+  <div
+    style={{
+      width: "100%",
+      display: "flex",
+      gap: 4,
+      padding: "6px 0",
+      justifyContent: "space-between",
+    }}
+  >
+    {Array.from({ length: 7 }).map((_, i) => (
+      <div
+        key={i}
+        style={{
+          flex: 1,
+          height: 12,
+          background: "rgba(255,255,255,0.2)",
+          border: "1px solid rgba(255,255,255,0.7)",
+          borderRadius: 2,
+          animation: `qe-race-fill 2.2s ease-in-out infinite`,
+          animationDelay: `${i * 180}ms`,
+        }}
+      />
+    ))}
+  </div>
+);
+
+const powerPlayDiagram = () => (
+  <div
+    style={{
+      width: "100%",
+      display: "flex",
+      gap: 10,
+      padding: "8px 0",
+      justifyContent: "space-around",
+      alignItems: "center",
+    }}
+  >
+    {[
+      { symbol: "💥", color: "#1040C0", label: "Pop" },
+      { symbol: "✓", color: "#22C55E", label: "Reveal" },
+      { symbol: "⚡", color: "#F0C020", label: "Halve" },
+    ].map((power, i) => (
+      <div
+        key={i}
+        style={{
+          textAlign: "center",
+          animation: "qe-power-pulse 1.8s ease-in-out infinite",
+          animationDelay: `${i * 200}ms`,
+        }}
+      >
+        <div
+          style={{
+            fontSize: "1.4rem",
+            marginBottom: 2,
+          }}
+        >
+          {power.symbol}
+        </div>
+        <div
+          style={{
+            font: "700 9px 'Outfit',sans-serif",
+            opacity: 0.8,
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
+          }}
+        >
+          {power.label}
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 function modeCard(bg: string, color: string): CSSProperties {
   return {
     display: "flex",
