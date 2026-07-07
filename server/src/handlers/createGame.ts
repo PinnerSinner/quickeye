@@ -29,6 +29,7 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
     const body = JSON.parse(event.body ?? "{}") as CreateGameMessage;
     let playerName = (body.playerName ?? "").trim() || "Player";
     const gameMode = body.gameMode ?? "time-attack-60";
+    const gameType = body.gameType ?? "multiplayer";
 
     // Check for profanity in player name
     if (containsProfanity(playerName)) {
@@ -63,6 +64,7 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
       centerCardId: null,
       drawPile: [],
       gameMode,
+      gameType,
       createdAt: Math.floor(Date.now() / 1000),
       ttl: ttlFromNow(GAME_CONFIG.gameTtlHours),
     };

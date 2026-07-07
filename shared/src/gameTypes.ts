@@ -35,6 +35,10 @@ export interface Player {
   score: number;
   /** The card currently in this player's hand (their "pile top"). */
   currentCardId: number | null;
+  /** True if this player is an AI bot (single-player mode). */
+  isBot?: boolean;
+  /** For bots: response time delay in milliseconds before making a move. */
+  botResponseTime?: number;
 }
 
 /**
@@ -59,6 +63,8 @@ export interface GameState {
   drawPile: number[];
   /** Game mode determines scoring and timing rules. */
   gameMode: GameMode;
+  /** Game type: single-player (vs bots) or multiplayer (vs humans). */
+  gameType: "single" | "multiplayer";
   createdAt: number;
   /** Epoch seconds after which DynamoDB auto-deletes this row (abandoned games). */
   ttl: number;

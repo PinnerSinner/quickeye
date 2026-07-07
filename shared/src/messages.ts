@@ -20,6 +20,7 @@ export interface CreateGameMessage {
   action: "createGame";
   playerName: string;
   gameMode?: GameMode;
+  gameType?: "single" | "multiplayer";
 }
 
 export interface JoinGameMessage {
