@@ -97,6 +97,30 @@ export default function App() {
           defaultUrl={defaultUrl}
           savedName={savedName}
           onNameChange={handleNameChange}
+          hideUrl={true}
+        />
+      </div>
+    );
+  }
+
+  // Show game type selection FIRST (before any lobby)
+  if (showGameTypeSelection && !pendingGameType) {
+    return (
+      <div className="container">
+        <GameTypeScreen
+          onSelectType={(type) => {
+            setPendingGameType(type);
+            if (type === "solo" || type === "vs-ai") {
+              // For solo/vs-ai, skip lobby and go straight to game mode selection
+              setShowGameModeSelection(true);
+            } else {
+              // For multiplayer, show lobby first
+              setShowGameTypeSelection(false);
+            }
+          }}
+          onCancel={() => {
+            setShowGameTypeSelection(false);
+          }}
         />
       </div>
     );

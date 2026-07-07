@@ -28,18 +28,25 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
     const res = await doc.send(
       new ScanCommand({
         TableName: GAMES_TABLE,
-        FilterExpression: "#status = :lobby",
-        ExpressionAttributeNames: { "#status": "status" },
-        ExpressionAttributeValues: { ":lobby": "lobby" },
+        FilterExpression: "#status = :lobby AND #created > :recent",
+        ExpressionAttributeNames: { "#status": "status", "#created": "createdAt" },
+        ExpressionAttributeValues: {
+          ":lobby": "lobby",
+          ":recent": Math.floor(Date.now() / 1000) - 1800, // Last 30 minutes
+        },
       })
     );
 
     const games = (res.Items as GameState[]) ?? [];
 
     // Extract summary info (gameId, host name, player count)
-    // Only include games with at least 1 player (host must be waiting)
+    // Only include games with at least 1 player (host must be waiting) and active connections
     const gameSummaries = games
-      .filter((game) => game.players.length > 0)
+      .filter(
+        (game) =>
+          game.players.length > 0 &&
+          game.players.some((p) => p.connectionId !== null) // At least one player connected
+      )
       .map((game) => ({
         gameId: game.gameId,
         host: game.players[0].name,

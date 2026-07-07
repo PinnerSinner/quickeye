@@ -8,6 +8,7 @@ interface ConnectScreenProps {
   defaultUrl?: string;
   savedName?: string;
   onNameChange?: (name: string) => void;
+  hideUrl?: boolean;
 }
 
 export function ConnectScreen({
@@ -16,21 +17,23 @@ export function ConnectScreen({
   defaultUrl = "",
   savedName = "",
   onNameChange,
+  hideUrl = false,
 }: ConnectScreenProps) {
   const [url, setUrl] = useState(defaultUrl);
   const [name, setName] = useState(savedName);
 
   const handleConnect = () => {
-    if (!url.trim()) {
-      alert("Enter a WebSocket URL");
-      return;
-    }
     if (!name.trim()) {
       alert("Enter your player name");
       return;
     }
     onNameChange?.(name);
-    onConnect(url);
+    // If URL is hidden, use default URL. Otherwise require URL input.
+    if (!hideUrl && !url.trim()) {
+      alert("Enter a WebSocket URL");
+      return;
+    }
+    onConnect(url || defaultUrl);
   };
 
   return (
@@ -68,14 +71,16 @@ export function ConnectScreen({
             className="connect-input"
           />
 
-          <input
-            type="text"
-            placeholder="wss://your-api-gateway-url/prod"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleConnect()}
-            className="connect-input connect-url-input"
-          />
+          {!hideUrl && (
+            <input
+              type="text"
+              placeholder="wss://your-api-gateway-url/prod"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleConnect()}
+              className="connect-input connect-url-input"
+            />
+          )}
 
           <button onClick={handleConnect} className="connect-button">
             Start Match

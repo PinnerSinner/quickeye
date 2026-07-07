@@ -123,11 +123,13 @@ export function GameScreen({
           </div>
           <h1>QUICKEYE</h1>
         </div>
-        <button className="quit-btn">✕ QUIT</button>
-        <div className={`header-timer ${isDanger ? "danger" : ""}`}>
-          <div className="timer-number">{timeRemaining}</div>
-          <div className="timer-label">SEC</div>
-        </div>
+        <button className="quit-btn" onClick={onReturnLobby}>✕ QUIT</button>
+        {maxTime !== 999999 && (
+          <div className={`header-timer ${isDanger ? "danger" : ""}`}>
+            <div className="timer-number">{timeRemaining}</div>
+            <div className="timer-label">SEC</div>
+          </div>
+        )}
       </div>
 
       {/* Progress bar */}

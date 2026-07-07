@@ -108,6 +108,18 @@
 .game-type-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
+  background: #000000;
+  color: #ffffff;
+}
+
+.game-type-card:hover h2,
+.game-type-card:hover .game-type-icon {
+  color: #ffffff;
+}
+
+.game-type-card:hover p,
+.game-type-card:hover .game-type-hint {
+  color: #cccccc;
 }
 
 .game-type-card:active {
