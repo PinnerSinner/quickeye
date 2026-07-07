@@ -56,11 +56,28 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
       currentCardId: null,
     };
 
+    // For solo/vs-ai, add bot players
+    const players: Player[] = [host];
+    if (gameType === "vs-ai") {
+      const botNames = ["Marco", "Jeff", "Walter", "Donny"];
+      botNames.forEach((name) => {
+        players.push({
+          playerId: randomId(),
+          name,
+          connectionId: null,
+          score: 0,
+          currentCardId: null,
+          isBot: true,
+          botResponseTime: 800 + Math.random() * 400, // 800-1200ms
+        });
+      });
+    }
+
     const state: GameState = {
       gameId,
-      status: "lobby",
+      status: gameType === "solo" ? "playing" : "lobby", // Solo starts immediately
       hostId: playerId,
-      players: [host],
+      players,
       centerCardId: null,
       drawPile: [],
       gameMode,

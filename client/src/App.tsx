@@ -170,7 +170,7 @@ export default function App() {
                 action: "createGame",
                 playerName: pendingCreateGameName,
                 gameMode: mode,
-                gameType: pendingGameType === "multiplayer" ? "multiplayer" : "single",
+                gameType: pendingGameType,
               } as ClientMessage);
               setPendingCreateGameName(null);
               setPendingGameType(null);

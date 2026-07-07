@@ -63,8 +63,8 @@ export interface GameState {
   drawPile: number[];
   /** Game mode determines scoring and timing rules. */
   gameMode: GameMode;
-  /** Game type: single-player (vs bots) or multiplayer (vs humans). */
-  gameType: "single" | "multiplayer";
+  /** Game type: solo, vs-ai, or multiplayer. */
+  gameType: "solo" | "vs-ai" | "multiplayer";
   createdAt: number;
   /** Epoch seconds after which DynamoDB auto-deletes this row (abandoned games). */
   ttl: number;
