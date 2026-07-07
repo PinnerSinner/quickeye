@@ -40,13 +40,18 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
     const games = (res.Items as GameState[]) ?? [];
 
     // Extract summary info (gameId, host name, player count)
-    // Only include games with at least 1 player (host must be waiting) and active connections
+    // Only include games where:
+    // 1. Host is still connected (connectionId is not null)
+    // 2. At least one other player can join
     const gameSummaries = games
-      .filter(
-        (game) =>
-          game.players.length > 0 &&
-          game.players.some((p) => p.connectionId !== null) // At least one player connected
-      )
+      .filter((game) => {
+        const host = game.players.find((p) => p.playerId === game.hostId);
+        return (
+          host &&
+          host.connectionId !== null && // Host must be connected
+          game.players.length > 0 // At least 1 player (the host)
+        );
+      })
       .map((game) => ({
         gameId: game.gameId,
         host: game.players[0].name,

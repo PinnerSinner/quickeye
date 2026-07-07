@@ -14,7 +14,7 @@
 
 import type { APIGatewayProxyWebsocketHandlerV2 } from "aws-lambda";
 import type { GameState } from "@quickeye/shared";
-import { getConnection, deleteConnection, getGame, putGame } from "../lib/dynamo";
+import { getConnection, deleteConnection, getGame, putGame, deleteGame } from "../lib/dynamo";
 import { broadcast, endpointFromEvent } from "../lib/apigw";
 import { ok, fail } from "../lib/util";
 
@@ -27,20 +27,26 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
     if (conn?.gameId && conn.playerId) {
       const game = await getGame(conn.gameId);
       if (game) {
-        const updated: GameState = {
-          ...game,
-          players: game.players.map((p) =>
-            p.playerId === conn.playerId ? { ...p, connectionId: null } : p
-          ),
-        };
-        await putGame(updated);
+        // If host disconnects while game is in lobby, delete the entire game
+        if (game.hostId === conn.playerId && game.status === "lobby") {
+          await deleteGame(conn.gameId);
+        } else {
+          // Otherwise, mark player as disconnected
+          const updated: GameState = {
+            ...game,
+            players: game.players.map((p) =>
+              p.playerId === conn.playerId ? { ...p, connectionId: null } : p
+            ),
+          };
+          await putGame(updated);
 
-        const endpoint = endpointFromEvent(event.requestContext);
-        await broadcast(
-          endpoint,
-          updated.players.map((p) => p.connectionId),
-          { type: "stateUpdate", state: updated }
-        );
+          const endpoint = endpointFromEvent(event.requestContext);
+          await broadcast(
+            endpoint,
+            updated.players.map((p) => p.connectionId),
+            { type: "stateUpdate", state: updated }
+          );
+        }
       }
     }
     return ok();

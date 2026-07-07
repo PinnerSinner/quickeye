@@ -106,6 +106,15 @@ export function LobbyScreen({
     if (mode === "browse") {
       return (
         <div className="lobby-screen">
+          <div style={{ marginBottom: "1rem" }}>
+            <input
+              type="text"
+              placeholder="Your name"
+              value={inputName}
+              onChange={(e) => setInputName(e.target.value)}
+              autoFocus
+            />
+          </div>
           <h1>Available Games</h1>
           <div className="games-list">
             {availableGames.length === 0 ? (
@@ -131,15 +140,6 @@ export function LobbyScreen({
                 </div>
               ))
             )}
-          </div>
-          <div style={{ marginTop: "1rem" }}>
-            <input
-              type="text"
-              placeholder="Your name"
-              value={inputName}
-              onChange={(e) => setInputName(e.target.value)}
-              style={{ marginBottom: "0.5rem" }}
-            />
           </div>
           <button className="secondary" onClick={() => setMode("choose")}>
             Back
