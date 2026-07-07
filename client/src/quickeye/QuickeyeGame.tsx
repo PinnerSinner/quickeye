@@ -610,25 +610,44 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
 
   // ---------- navigation ----------
   const goHome = () => {
+    audioRef.current?.navigate();
     stopTimers();
     patch({ view: "home" });
   };
-  const goSolo = () => patch({ view: "solo" });
-  const goMulti = () => patch({ view: "multi" });
-  const goBrowse = () => patch({ view: "browse" });
+  const goSolo = () => {
+    audioRef.current?.navigate();
+    patch({ view: "solo" });
+  };
+  const goMulti = () => {
+    audioRef.current?.navigate();
+    patch({ view: "multi" });
+  };
+  const goBrowse = () => {
+    audioRef.current?.navigate();
+    patch({ view: "browse" });
+  };
   const goCreate = () => {
+    audioRef.current?.navigate();
     patch({ view: "create", copyOk: false });
     props.onCreateMultiplayer?.(stateRef.current.playerName || "You");
   };
-  const goJoin = () => patch({ view: "join" });
-  const goLeaders = () => patch({ view: "leaderboard" });
+  const goJoin = () => {
+    audioRef.current?.navigate();
+    patch({ view: "join" });
+  };
+  const goLeaders = () => {
+    audioRef.current?.navigate();
+    patch({ view: "leaderboard" });
+  };
 
   const onName = (e: React.ChangeEvent<HTMLInputElement>) =>
     patch({ playerName: e.target.value, nameSaved: false });
   const onSaveName = (e: React.MouseEvent) => {
     e.preventDefault();
+    audioRef.current?.menuClick();
     const name = stateRef.current.playerName;
     if (containsProfanity(name)) {
+      audioRef.current?.errorSound();
       patch({ playerName: "" });
       return;
     }
@@ -644,6 +663,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   const onCode = (e: React.ChangeEvent<HTMLInputElement>) =>
     patch({ joinCode: e.target.value.replace(/\D/g, "").slice(0, 4) });
   const onCopyCode = () => {
+    audioRef.current?.menuClick();
     try {
       navigator.clipboard?.writeText(stateRef.current.roomCode);
     } catch {
@@ -670,10 +690,12 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     }
   };
   const setColorPos = (v: number) => {
+    audioRef.current?.menuClick();
     patch({ colorPos: v, colorNoAnim: false });
     setTimeout(maybeRecenter, 340);
   };
   const nudgeColor = (dir: number) => {
+    audioRef.current?.menuClick();
     patch((s) => ({ colorPos: s.colorPos + dir, colorNoAnim: false }));
     setTimeout(maybeRecenter, 340);
   };
@@ -729,17 +751,30 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     bRef.current = window.setInterval(botTick, OPP_INTERVAL_MS);
     setTimeout(startParticles, 70);
   };
-  const startMarathon = () => begin("marathon");
-  const startRace = () => begin("race");
-  const startPower = () => begin("power");
+  const startMarathon = () => {
+    audioRef.current?.menuClick();
+    begin("marathon");
+  };
+  const startRace = () => {
+    audioRef.current?.menuClick();
+    begin("race");
+  };
+  const startPower = () => {
+    audioRef.current?.menuClick();
+    begin("power");
+  };
   const startFromMulti = () => {
+    audioRef.current?.menuClick();
     if (stateRef.current.isMultiplayer) {
       props.onStartGame?.();
     } else {
       begin("marathon");
     }
   };
-  const onPlayAgain = () => begin(stateRef.current.mode || "marathon");
+  const onPlayAgain = () => {
+    audioRef.current?.menuClick();
+    begin(stateRef.current.mode || "marathon");
+  };
 
   // ---------- powerups ----------
   const popSeq = (list: number[], k: number) => {

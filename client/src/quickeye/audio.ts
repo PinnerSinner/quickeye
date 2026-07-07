@@ -107,6 +107,60 @@ export class QuickeyeAudio {
     o.stop(t + 0.2);
   }
 
+  /** Menu click — bright boop. */
+  menuClick(): void {
+    const a = this.ctx;
+    if (!a || !this.enabled) return;
+    const t = a.currentTime;
+    const o = a.createOscillator();
+    const g = a.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(800, t);
+    o.frequency.exponentialRampToValueAtTime(1200, t + 0.1);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.2, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    o.connect(g).connect(a.destination);
+    o.start(t);
+    o.stop(t + 0.13);
+  }
+
+  /** Navigation sound — deeper boop. */
+  navigate(): void {
+    const a = this.ctx;
+    if (!a || !this.enabled) return;
+    const t = a.currentTime;
+    const o = a.createOscillator();
+    const g = a.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(550, t);
+    o.frequency.exponentialRampToValueAtTime(650, t + 0.15);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.17);
+    o.connect(g).connect(a.destination);
+    o.start(t);
+    o.stop(t + 0.19);
+  }
+
+  /** Error sound — descending buzz. */
+  errorSound(): void {
+    const a = this.ctx;
+    if (!a || !this.enabled) return;
+    const t = a.currentTime;
+    const o = a.createOscillator();
+    const g = a.createGain();
+    o.type = "square";
+    o.frequency.setValueAtTime(300, t);
+    o.frequency.exponentialRampToValueAtTime(100, t + 0.2);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.15, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+    o.connect(g).connect(a.destination);
+    o.start(t);
+    o.stop(t + 0.24);
+  }
+
   /** Bubble "pop" for the Pop powerup. */
   popSound(): void {
     const a = this.ctx;
