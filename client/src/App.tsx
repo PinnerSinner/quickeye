@@ -188,11 +188,13 @@ export default function App() {
           onSelectMode={(mode: GameMode) => {
             game.setGameMode(mode);
             setShowGameModeSelection(false);
-            if (pendingCreateGameName && pendingGameType) {
-              game.setPlayerName(pendingCreateGameName);
+            if (pendingGameType) {
+              // Use pending name, saved name, or "Player" as fallback
+              const playerName = pendingCreateGameName || savedName || "Player";
+              game.setPlayerName(playerName);
               ws.send({
                 action: "createGame",
-                playerName: pendingCreateGameName,
+                playerName,
                 gameMode: mode,
                 gameType: pendingGameType,
               } as ClientMessage);

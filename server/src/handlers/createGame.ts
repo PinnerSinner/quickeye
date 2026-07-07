@@ -13,6 +13,7 @@ import {
   GAME_CONFIG,
   generateRoomCode,
   containsProfanity,
+  dealInitial,
   type CreateGameMessage,
   type GameState,
   type Player,
@@ -73,7 +74,7 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
       });
     }
 
-    const state: GameState = {
+    let state: GameState = {
       gameId,
       status: gameType === "solo" ? "playing" : "lobby", // Solo starts immediately
       hostId: playerId,
@@ -85,6 +86,11 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
       createdAt: Math.floor(Date.now() / 1000),
       ttl: ttlFromNow(GAME_CONFIG.gameTtlHours),
     };
+
+    // For solo games, deal initial cards immediately
+    if (gameType === "solo") {
+      state = dealInitial(state);
+    }
 
     await putGame(state);
     await putConnection({
