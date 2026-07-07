@@ -11,6 +11,10 @@
   position: relative;
 }
 
+.game-screen.shake {
+  animation: qe-screen-shake 0.4s ease-out;
+}
+
 .game-header {
   display: flex;
   justify-content: space-between;

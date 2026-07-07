@@ -4,6 +4,7 @@ import {
   getCardSymbols,
   findMatchingSymbol,
 } from "../utils/deck";
+import { playCorrectSound, playCountdownTick, playGameOverSound } from "../utils/soundEffects";
 import { GeometricGlyph } from "../components/GeometricGlyph";
 import { QEyeLogo } from "../components/QEyeLogo";
 import "./GameScreen.css";
@@ -31,6 +32,8 @@ export function GameScreen({
   const [feedbackSymbolId, setFeedbackSymbolId] = useState<number | null>(null);
   const [feedbackType, setFeedbackType] = useState<"correct" | "wrong" | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
+  const [lastUrgentTime, setLastUrgentTime] = useState<number>(-1);
 
   // Get max time based on game mode
   const getMaxTime = () => {
@@ -50,14 +53,20 @@ export function GameScreen({
       setTimeRemaining((prev) => {
         const next = prev - 1;
         if (next <= 0) {
+          playGameOverSound();
           return 0;
+        }
+        // Play urgency sound every second when <5s remaining
+        if (next <= 5 && next > lastUrgentTime) {
+          playCountdownTick();
+          setLastUrgentTime(next);
         }
         return next;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [state.status, maxTime]);
+  }, [state.status, maxTime, lastUrgentTime]);
 
   const centerSymbols =
     centerCardId !== null && centerCardId !== undefined
@@ -76,6 +85,12 @@ export function GameScreen({
     setSubmitted(true);
     setFeedbackSymbolId(symbolId);
     setFeedbackType("correct"); // Optimistic feedback; server will correct if wrong
+
+    // Screen shake + sound on match attempt
+    playCorrectSound();
+    setIsShaking(true);
+    setTimeout(() => setIsShaking(false), 400);
+
     onSubmitMatch(symbolId);
     setTimeout(() => {
       setSubmitted(false);
@@ -99,7 +114,7 @@ export function GameScreen({
   const sortedPlayers = [...state.players].sort((a, b) => b.score - a.score);
 
   return (
-    <div className="game-screen">
+    <div className={`game-screen ${isShaking ? "shake" : ""}`}>
       {/* Header */}
       <div className="game-header">
         <div className="header-left">
