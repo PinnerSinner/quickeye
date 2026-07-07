@@ -1,5 +1,33 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&display=swap');
 
+/* Quickeye Animations */
+@keyframes qe-pulse {
+  0% { background: currentColor; }
+  50% { background: currentColor; opacity: 0.6; }
+  100% { background: currentColor; }
+}
+
+@keyframes qe-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
+@keyframes qe-pop {
+  0% { opacity: 0; transform: scale(0.5); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes qe-bar-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes qe-num-pulse {
+  0%, 100% { color: #D02020; }
+  50% { color: #D02020; opacity: 0.6; }
+}
+
 :root {
   --color-bg: #000000;
   --color-fg: #121212;

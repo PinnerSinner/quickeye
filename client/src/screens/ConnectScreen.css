@@ -1,116 +1,152 @@
+.connect-screen-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #0D0D0D;
+  padding: 1rem;
+}
+
 .connect-screen {
+  width: 100%;
+  max-width: 460px;
+  background: #121212;
+  border: 4px solid #000000;
+  box-shadow: 10px 10px 0 0 #000000;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  max-width: 500px;
-  width: 100%;
+}
+
+.connect-banner {
+  height: 200px;
+  background: #000000;
   position: relative;
+  display: flex;
+  align-items: flex-start;
+  padding: 20px;
 }
 
-.connect-screen::before {
-  content: '';
+.banner-shape {
   position: absolute;
-  top: -20px;
-  right: -20px;
-  width: 80px;
-  height: 80px;
-  background: var(--color-blue);
-  border: var(--border-width) solid var(--color-fg);
-  transform: rotate(45deg);
-  z-index: -1;
-  display: none;
 }
 
-.connect-screen::after {
-  content: '';
-  position: absolute;
-  bottom: -40px;
-  left: -40px;
-  width: 120px;
-  height: 120px;
-  border: var(--border-width) solid var(--color-fg);
+.banner-circle {
+  width: 88px;
+  height: 88px;
+  background: #D02020;
   border-radius: 50%;
-  z-index: -1;
-  display: none;
+  top: 0;
+  left: 0;
 }
 
-.connect-screen h1 {
-  color: var(--color-fg);
-  margin: 0 0 0.5rem 0;
-  font-size: clamp(2.5rem, 12vw, 4rem);
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: -2px;
-  line-height: 0.9;
+.banner-diamond {
+  width: 74px;
+  height: 74px;
+  background: #F0C020;
+  transform: rotate(45deg);
+  top: 0;
+  left: 50%;
+  margin-left: -37px;
 }
 
-.connect-screen > p {
-  color: var(--color-fg);
-  font-size: 0.875rem;
+.banner-triangle {
+  width: 0;
+  height: 0;
+  border-left: 40px solid transparent;
+  border-right: 40px solid transparent;
+  border-bottom: 70px solid #1040C0;
+  top: 0;
+  right: 0;
+}
+
+.banner-logo {
+  position: absolute;
+  bottom: 10px;
+  left: 20px;
+}
+
+.connect-body {
+  padding: 30px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.connect-eyebrow {
+  color: #888888;
+  font-size: 12px;
   font-weight: 700;
-  margin: 1.5rem 0 0.5rem 0;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  margin: 0 0 8px 0;
 }
 
-.connect-screen input {
-  padding: 1rem;
-  font-size: 1rem;
-  border: var(--border-width) solid var(--color-fg);
-  background: var(--color-white);
+.connect-instruction {
+  color: #bbbbbb;
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0 0 20px 0;
+  line-height: 1.4;
+}
+
+.connect-input {
+  padding: 12px 14px;
+  font-size: 15px;
+  border: 4px solid #121212;
+  background: #ffffff;
   font-family: 'Outfit', sans-serif;
   font-weight: 500;
-  box-shadow: var(--shadow-sm);
+  margin-bottom: 12px;
   transition: all 200ms ease-out;
 }
 
-.connect-screen input:nth-of-type(2) {
-  font-family: 'Courier New', monospace;
-  font-size: 0.875rem;
-}
-
-.connect-screen input:focus {
+.connect-input:focus {
   outline: none;
-  box-shadow: var(--shadow-lg);
-  background: var(--color-yellow);
+  box-shadow: 4px 4px 0 0 #121212;
 }
 
-.connect-screen button {
-  padding: 1rem;
-  font-size: 1rem;
-  background: var(--color-red);
-  color: var(--color-white);
-  border: var(--border-width) solid var(--color-fg);
+.connect-url-input {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.connect-button {
+  padding: 14px 16px;
+  font-size: 1.1rem;
+  background: #D02020;
+  color: #ffffff;
+  border: 4px solid #121212;
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 1px;
-  box-shadow: var(--shadow-md);
+  box-shadow: 6px 6px 0 0 #000000;
   transition: all 200ms ease-out;
   font-family: 'Outfit', sans-serif;
-  margin-top: 1rem;
 }
 
-.connect-screen button:hover {
+.connect-button:hover {
   background: #B91A1A;
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 8px 8px 0 0 #000000;
 }
 
-.connect-screen button:active {
+.connect-button:active {
   transform: translateY(2px);
-  box-shadow: 2px 2px 0px 0px #121212;
+  box-shadow: 3px 3px 0 0 #000000;
 }
 
-.connect-screen .error {
-  color: var(--color-white);
-  font-size: 0.95rem;
-  padding: 1rem;
-  background: var(--color-red);
-  border: var(--border-width) solid var(--color-fg);
-  margin-top: 1rem;
+.connect-error {
+  color: #ffffff;
+  font-size: 14px;
+  padding: 12px;
+  background: #D02020;
+  border: 4px solid #121212;
+  margin-top: 16px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: var(--shadow-md);
+  box-shadow: 4px 4px 0 0 #000000;
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { QEyeLogo } from "../components/QEyeLogo";
 import "./ConnectScreen.css";
 
 interface ConnectScreenProps {
@@ -33,29 +34,56 @@ export function ConnectScreen({
   };
 
   return (
-    <div className="connect-screen">
-      <h1>Quickeye</h1>
-      <p>Enter your name:</p>
-      <input
-        type="text"
-        placeholder="Your player name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        onKeyPress={(e) => e.key === "Enter" && handleConnect()}
-        autoFocus
-      />
-      <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#999" }}>
-        WebSocket URL:
-      </p>
-      <input
-        type="text"
-        placeholder="wss://your-api-gateway-url/prod"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        onKeyPress={(e) => e.key === "Enter" && handleConnect()}
-      />
-      <button onClick={handleConnect}>Connect</button>
-      {error && <p className="error">{error}</p>}
+    <div className="connect-screen-wrapper">
+      <div className="connect-screen">
+        {/* Constructivist top band */}
+        <div className="connect-banner">
+          {/* Red circle top-left */}
+          <div className="banner-shape banner-circle" />
+
+          {/* Yellow diamond top-center */}
+          <div className="banner-shape banner-diamond" />
+
+          {/* Blue triangle top-right */}
+          <div className="banner-shape banner-triangle" />
+
+          {/* Q-eye logo bottom-left */}
+          <div className="banner-logo">
+            <QEyeLogo size="sm" includeWordmark={true} />
+          </div>
+        </div>
+
+        {/* Body content */}
+        <div className="connect-body">
+          <p className="connect-eyebrow">Enter your details</p>
+          <p className="connect-instruction">Join a match or create a new one</p>
+
+          <input
+            type="text"
+            placeholder="Your player name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleConnect()}
+            autoFocus
+            className="connect-input"
+          />
+
+          <input
+            type="text"
+            placeholder="wss://your-api-gateway-url/prod"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleConnect()}
+            className="connect-input connect-url-input"
+          />
+
+          <button onClick={handleConnect} className="connect-button">
+            Start Match
+          </button>
+
+          {error && <p className="connect-error">{error}</p>}
+        </div>
+      </div>
     </div>
   );
 }

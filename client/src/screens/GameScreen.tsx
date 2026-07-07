@@ -3,8 +3,8 @@ import type { GameState } from "@quickeye/shared";
 import {
   getCardSymbols,
   findMatchingSymbol,
-  getSymbolEmoji,
 } from "../utils/deck";
+import { GeometricGlyph } from "../components/GeometricGlyph";
 import "./GameScreen.css";
 
 interface GameScreenProps {
@@ -132,7 +132,7 @@ export function GameScreen({
                   key={symbolId}
                   className="symbol-box"
                 >
-                  <span className="symbol">{getSymbolEmoji(symbolId)}</span>
+                  <GeometricGlyph symbolId={symbolId} size={52} />
                 </div>
               ))}
             </div>
@@ -152,7 +152,7 @@ export function GameScreen({
                   onClick={() => handleSymbolClick(symbolId)}
                   disabled={submitted}
                 >
-                  <span className="symbol">{getSymbolEmoji(symbolId)}</span>
+                  <GeometricGlyph symbolId={symbolId} size={52} />
                 </button>
               ))}
             </div>
