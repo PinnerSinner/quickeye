@@ -988,7 +988,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     if (props.matchResult) {
       if (props.matchResult.correct) {
         audioRef.current?.chunk((stateRef.current.scores.you || 0) + 1);
-        patch((s) => ({ scores: { ...s.scores, you: s.scores.you + 1 } }));
+        patch((s) => ({ scores: { ...s.scores, you: s.scores.you + 1 }, locked: false }));
       } else {
         audioRef.current?.wrongTone();
         patch({ wrongId: props.matchResult.symbolId ?? -1, locked: true, shake: true });

@@ -33,7 +33,7 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
         ExpressionAttributeNames: { "#status": "status", "#created": "createdAt", "#gtype": "gameType" },
         ExpressionAttributeValues: {
           ":lobby": "lobby",
-          ":recent": now - 600, // Last 10 minutes only (stale games excluded)
+          ":recent": now - 30, // Last 30 seconds only
           ":mp": "multiplayer",
         },
       })
