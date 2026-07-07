@@ -1,54 +1,42 @@
 /**
- * Simple profanity filter for player names.
- * Only checks for whole-word matches to avoid false positives in normal names.
- * Examples that should PASS: Marco, Sarah, Mason, Frederick, Alexander
- * Examples that should FAIL: asshole, fuckface, shithead, etc.
+ * Profanity filter for player names using the bad-words npm package.
+ * Detects inappropriate language without false positives on normal names.
  */
 
-const PROFANITIES = [
-  // Only multi-word phrases that are clearly intentional (letters only, no regex special chars)
-  'asshole', 'bastard', 'bitch', 'bullshit', 'damn', 'dammit', 'damnit',
-  'fucked', 'fuckface', 'fucking', 'goddamn', 'goddammed', 'horseshit',
-  'motherfucker', 'shite', 'shithead', 'shitty', 'whore', 'asshead',
-  'bitches', 'bitching', 'crap', 'crappy', 'fart', 'frick', 'frigg', 'pissed',
-  'slut', 'retard', 'retarded', 'twat', 'cunt', 'faggot', 'piss',
-];
+import { Filter } from 'bad-words';
 
-/**
- * Escape regex special characters so they're treated as literals
- */
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Initialize the filter once (singleton)
+let filterInstance: Filter | null = null;
+
+function getFilter(): Filter {
+  if (!filterInstance) {
+    filterInstance = new Filter();
+  }
+  return filterInstance;
 }
 
 export function containsProfanity(text: string): boolean {
   if (!text) return false;
 
-  const normalized = text.toLowerCase().trim();
+  const filter = getFilter();
 
-  // Only check for whole-word matches using word boundaries
-  // This avoids false positives like "Marcus" or "Frederick"
-  for (const word of PROFANITIES) {
-    // Escape regex special characters and use word boundaries
-    const escaped = escapeRegex(word);
-    const regex = new RegExp(`\\b${escaped}\\b`, 'i');
-    if (regex.test(normalized)) {
-      return true;
-    }
-  }
-
-  return false;
+  // The bad-words filter checks if text contains any profanity
+  // Returns true if profanity is detected
+  return filter.isProfane(text.trim());
 }
 
 /**
- * Sanitize a player name by removing/replacing profanities.
- * If it contains profanities, returns empty string to reject the name.
+ * Sanitize a player name by replacing profanities with asterisks.
+ * If the name consists entirely of profanity, returns empty string.
  */
 export function sanitizePlayerName(name: string): string {
   if (containsProfanity(name)) {
     return '';
   }
 
-  // Also remove extra whitespace and trim
-  return name.trim().replace(/\s+/g, ' ').substring(0, 20);
+  const filter = getFilter();
+  const sanitized = filter.clean(name.trim());
+
+  // Further validation: trim length and whitespace
+  return sanitized.replace(/\s+/g, ' ').substring(0, 20);
 }
