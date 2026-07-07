@@ -2085,6 +2085,25 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
         {st.view === "browse" && (
           <div style={panelStyle(560)}>
             {smallHeader("Available Games", goMulti)}
+            <button
+              className="qhov"
+              onClick={() => {
+                audioRef.current?.menuClick();
+                props.onQueryGames?.();
+              }}
+              style={{
+                background: "#121212",
+                color: "#fff",
+                border: "3px solid #121212",
+                padding: "0.5rem 1rem",
+                font: "600 0.9rem 'Outfit',sans-serif",
+                cursor: "pointer",
+                marginBottom: 12,
+                width: "fit-content",
+              }}
+            >
+              ↻ Refresh Games
+            </button>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{browseList()}</div>
           </div>
         )}
@@ -2212,8 +2231,8 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             <button
               className="qhov"
               onClick={() => {
+                audioRef.current?.menuClick();
                 props.onJoinMultiplayer?.(stateRef.current.joinCode, stateRef.current.playerName || "You");
-                startFromMulti();
               }}
               style={primaryWide}
             >
