@@ -6,6 +6,7 @@ import {
   GameScreen,
   LeaderboardScreen,
   GameModeScreen,
+  GameTypeScreen,
 } from "./screens";
 import type {
   ClientMessage,
@@ -24,8 +25,10 @@ export default function App() {
     return localStorage.getItem("quickeye_player_name") || "";
   });
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showGameTypeSelection, setShowGameTypeSelection] = useState(false);
   const [showGameModeSelection, setShowGameModeSelection] = useState(false);
   const [pendingCreateGameName, setPendingCreateGameName] = useState<string | null>(null);
+  const [pendingGameType, setPendingGameType] = useState<"solo" | "vs-ai" | "multiplayer" | null>(null);
 
   // Auto-save player name to localStorage
   const handleNameChange = (name: string) => {
@@ -108,6 +111,27 @@ export default function App() {
     );
   }
 
+  // Show game type selection first
+  if (showGameTypeSelection) {
+    return (
+      <div className="container">
+        <GameTypeScreen
+          onSelectType={(type) => {
+            setPendingGameType(type);
+            setShowGameTypeSelection(false);
+            // For multiplayer, show game mode selection next
+            // For solo/vs-ai, go straight to game mode selection
+            setShowGameModeSelection(true);
+          }}
+          onCancel={() => {
+            setShowGameTypeSelection(false);
+            setPendingCreateGameName(null);
+          }}
+        />
+      </div>
+    );
+  }
+
   // Show game mode selection if creating a new game
   if (showGameModeSelection) {
     return (
@@ -116,19 +140,22 @@ export default function App() {
           onSelectMode={(mode: GameMode) => {
             game.setGameMode(mode);
             setShowGameModeSelection(false);
-            if (pendingCreateGameName) {
+            if (pendingCreateGameName && pendingGameType) {
               game.setPlayerName(pendingCreateGameName);
               ws.send({
                 action: "createGame",
                 playerName: pendingCreateGameName,
                 gameMode: mode,
+                gameType: pendingGameType === "multiplayer" ? "multiplayer" : "single",
               } as ClientMessage);
               setPendingCreateGameName(null);
+              setPendingGameType(null);
             }
           }}
           onCancel={() => {
             setShowGameModeSelection(false);
             setPendingCreateGameName(null);
+            setPendingGameType(null);
           }}
         />
       </div>
@@ -144,7 +171,7 @@ export default function App() {
           playerName={game.playerName}
           onCreateGame={(name) => {
             setPendingCreateGameName(name);
-            setShowGameModeSelection(true);
+            setShowGameTypeSelection(true);
           }}
           onJoinGame={(gameId, name) => {
             game.setPlayerName(name);
