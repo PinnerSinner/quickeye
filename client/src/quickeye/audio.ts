@@ -9,6 +9,7 @@ export class QuickeyeAudio {
   private ctx: AudioContext | null = null;
   /** When false, all playback is suppressed. */
   enabled = true;
+  private bgm: HTMLAudioElement | null = null;
 
   /** Create/resume the AudioContext. Call from a user gesture (e.g. game start). */
   ensure(): void {
@@ -145,5 +146,43 @@ export class QuickeyeAudio {
       o.stop(tt + 0.36);
     });
     this.noise(0.16, 0.25, 2, t);
+  }
+
+  /** Load and play background music. Pass null/empty string to stop. */
+  playBGM(src: string | null): void {
+    try {
+      if (!src) {
+        if (this.bgm) {
+          this.bgm.pause();
+          this.bgm.currentTime = 0;
+        }
+        return;
+      }
+      if (!this.bgm) {
+        this.bgm = new Audio();
+        this.bgm.loop = true;
+        this.bgm.volume = 0.4;
+      }
+      if (this.bgm.src !== src) {
+        this.bgm.src = src;
+      }
+      if (this.enabled) {
+        this.bgm.play().catch(() => {
+          /* audio unavailable */
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** Stop background music. */
+  stopBGM(): void {
+    this.playBGM(null);
+  }
+
+  /** Set background music volume (0-1). */
+  setBGMVolume(vol: number): void {
+    if (this.bgm) this.bgm.volume = Math.max(0, Math.min(1, vol));
   }
 }

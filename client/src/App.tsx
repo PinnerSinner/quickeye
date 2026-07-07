@@ -9,27 +9,63 @@
 import { useEffect, useState } from "react";
 import { useWebSocket } from "./hooks";
 import { QuickeyeGame } from "./quickeye/QuickeyeGame";
-import type { ClientMessage, JoinedMessage } from "@quickeye/shared";
+import type {
+  ClientMessage,
+  JoinedMessage,
+  StateUpdateMessage,
+  MatchResultMessage,
+  ErrorMessage,
+} from "@quickeye/shared";
 import "./App.css";
 
 export default function App() {
   const wsUrl = import.meta.env.VITE_WSS_URL || "";
   const ws = useWebSocket({ url: wsUrl, enabled: !!wsUrl });
   const [serverRoomCode, setServerRoomCode] = useState<string | null>(null);
+  const [gameState, setGameState] = useState<any>(null);
+  const [matchResult, setMatchResult] = useState<{
+    correct: boolean;
+    symbolId?: number;
+    gameOver?: boolean;
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsub = ws.on("joined", (msg) => {
+    const unsubJoined = ws.on("joined", (msg) => {
       const m = msg as JoinedMessage;
       setServerRoomCode(m.gameId);
+      setGameState(m.state);
       console.log("Joined game:", m.gameId);
     });
+
+    const unsubStateUpdate = ws.on("stateUpdate", (msg) => {
+      const m = msg as StateUpdateMessage;
+      setGameState(m.state);
+    });
+
+    const unsubMatchResult = ws.on("matchResult", (msg) => {
+      const m = msg as MatchResultMessage;
+      setMatchResult(m);
+      setTimeout(() => setMatchResult(null), 100);
+    });
+
+    const unsubError = ws.on("error", (msg) => {
+      const m = msg as ErrorMessage;
+      setError(m.message);
+      setTimeout(() => setError(null), 3000);
+    });
+
     return () => {
-      unsub();
+      unsubJoined();
+      unsubStateUpdate();
+      unsubMatchResult();
+      unsubError();
     };
   }, [ws]);
 
   const handleCreateMultiplayer = (playerName: string) => {
     setServerRoomCode(null);
+    setGameState(null);
     if (!wsUrl) return;
     ws.send({
       action: "createGame",
@@ -47,12 +83,34 @@ export default function App() {
     } as ClientMessage);
   };
 
+  const handleStartGame = () => {
+    if (!wsUrl || !serverRoomCode) return;
+    ws.send({
+      action: "startGame",
+      gameId: serverRoomCode,
+    } as ClientMessage);
+  };
+
+  const handleSubmitMatch = (gameId: string, symbolId: number) => {
+    if (!wsUrl) return;
+    ws.send({
+      action: "submitMatch",
+      gameId,
+      symbolId,
+    } as ClientMessage);
+  };
+
   return (
     <div className="qe-app-shell">
       <QuickeyeGame
         onCreateMultiplayer={handleCreateMultiplayer}
         onJoinMultiplayer={handleJoinMultiplayer}
+        onStartGame={handleStartGame}
+        onSubmitMatch={handleSubmitMatch}
         serverRoomCode={serverRoomCode}
+        gameState={gameState}
+        matchResult={matchResult}
+        error={error}
       />
     </div>
   );

@@ -8,10 +8,14 @@
 import type { CSSProperties } from "react";
 
 export const PALETTE = {
-  red: "#D02020",
-  blue: "#1040C0",
-  yellow: "#F0C020",
-  black: "#121212",
+  red: "#FF3333",
+  blue: "#3366FF",
+  yellow: "#FFD700",
+  cyan: "#00D9FF",
+  lime: "#00FF66",
+  magenta: "#FF00FF",
+  orange: "#FF9900",
+  pink: "#FF69B4",
 } as const;
 
 /** clip-path polygons for the non-primitive shapes. */
@@ -29,26 +33,40 @@ export interface Glyph {
   c: GlyphColor;
 }
 
-/** The 18-symbol placeholder set the prototype draws from. */
+/** The 32-symbol placeholder set with bright, visible colors. */
 export const GLYPHS: Glyph[] = [
   { t: "circle", c: "red" },
   { t: "triangle", c: "yellow" },
   { t: "diamond", c: "blue" },
-  { t: "ring", c: "black" },
-  { t: "square", c: "black" },
+  { t: "ring", c: "cyan" },
+  { t: "square", c: "lime" },
   { t: "half", c: "red" },
   { t: "star", c: "blue" },
   { t: "circle", c: "yellow" },
-  { t: "plus", c: "blue" },
+  { t: "plus", c: "magenta" },
   { t: "hexagon", c: "red" },
-  { t: "diamond", c: "red" },
+  { t: "diamond", c: "orange" },
   { t: "ring", c: "blue" },
-  { t: "triangle", c: "red" },
+  { t: "triangle", c: "cyan" },
   { t: "star", c: "yellow" },
-  { t: "plus", c: "red" },
-  { t: "hexagon", c: "blue" },
-  { t: "square", c: "blue" },
-  { t: "circle", c: "blue" },
+  { t: "plus", c: "lime" },
+  { t: "hexagon", c: "magenta" },
+  { t: "square", c: "pink" },
+  { t: "circle", c: "cyan" },
+  { t: "diamond", c: "lime" },
+  { t: "triangle", c: "magenta" },
+  { t: "star", c: "orange" },
+  { t: "hexagon", c: "yellow" },
+  { t: "plus", c: "cyan" },
+  { t: "ring", c: "orange" },
+  { t: "square", c: "magenta" },
+  { t: "circle", c: "orange" },
+  { t: "diamond", c: "magenta" },
+  { t: "star", c: "cyan" },
+  { t: "triangle", c: "pink" },
+  { t: "hexagon", c: "cyan" },
+  { t: "plus", c: "orange" },
+  { t: "ring", c: "pink" },
 ];
 
 /** Iris colours the Q-eye logo cycles through on each blink. */
@@ -111,25 +129,25 @@ export type LeaderTab = "marathon" | "race" | "power";
 /** Static placeholder global leaderboard values. */
 export const LB: Record<LeaderTab, { n: string; v: number }[]> = {
   marathon: [
-    { n: "nova_7", v: 19 },
-    { n: "sable", v: 17 },
-    { n: "k0an", v: 15 },
-    { n: "riff", v: 13 },
-    { n: "lumen", v: 11 },
+    { n: "nova_7", v: 12 },
+    { n: "sable", v: 10 },
+    { n: "k0an", v: 9 },
+    { n: "riff", v: 8 },
+    { n: "lumen", v: 7 },
   ],
   race: [
-    { n: "k0an", v: 12.4 },
-    { n: "nova_7", v: 13.9 },
-    { n: "echo9", v: 15.2 },
-    { n: "sable", v: 16.8 },
-    { n: "lumen", v: 18.1 },
+    { n: "k0an", v: 28.4 },
+    { n: "nova_7", v: 31.2 },
+    { n: "echo9", v: 34.6 },
+    { n: "sable", v: 37.1 },
+    { n: "lumen", v: 40.8 },
   ],
   power: [
-    { n: "sable", v: 24 },
-    { n: "nova_7", v: 21 },
-    { n: "glyphy", v: 19 },
-    { n: "k0an", v: 17 },
-    { n: "riff", v: 14 },
+    { n: "sable", v: 14 },
+    { n: "nova_7", v: 12 },
+    { n: "glyphy", v: 11 },
+    { n: "k0an", v: 9 },
+    { n: "riff", v: 8 },
   ],
 };
 

@@ -41,6 +41,7 @@ import {
 } from "./glyphs";
 import { drawShape, styleHeaderShape } from "./canvas";
 import { QuickeyeAudio } from "./audio";
+import { containsProfanity } from "@quickeye/shared";
 import "./quickeye.css";
 
 type View =
@@ -84,16 +85,29 @@ interface QState {
   overCompare: boolean;
   raceTime: number;
   leaderTab: LeaderTab;
+  isMultiplayer: boolean;
+  gameId: string | null;
+  playerId: string | null;
+  serverError: string | null;
 }
 
 export interface QuickeyeGameProps {
-  /** Called when the player creates a multiplayer room; should return/resolve
-   *  the server-issued room code (or void to keep the local placeholder). */
+  /** Called when the player creates a multiplayer room. */
   onCreateMultiplayer?: (playerName: string) => void;
   /** Called when the player joins a room by code. */
   onJoinMultiplayer?: (code: string, playerName: string) => void;
+  /** Called when the host starts a multiplayer game. */
+  onStartGame?: () => void;
+  /** Called when a player submits a symbol match. */
+  onSubmitMatch?: (gameId: string, symbolId: number) => void;
   /** A server-issued room code to display on the Create screen, if available. */
   serverRoomCode?: string | null;
+  /** Server game state (multiplayer games). */
+  gameState?: any;
+  /** Result of the last match submission. */
+  matchResult?: { correct: boolean; symbolId?: number; gameOver?: boolean } | null;
+  /** Error message from server. */
+  error?: string | null;
 }
 
 const OPP_INTERVAL_MS = 3000; // "Normal" opponent pace
@@ -131,6 +145,10 @@ function initialState(): QState {
     overCompare: false,
     raceTime: 0,
     leaderTab: "marathon",
+    isMultiplayer: false,
+    gameId: null,
+    playerId: null,
+    serverError: null,
   };
 }
 
@@ -576,6 +594,20 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     clearTimeout(popTORef.current);
   };
 
+  const playMenuMusic = () => {
+    audioRef.current?.playBGM("/audio/menu-loop.mp3");
+    audioRef.current?.setBGMVolume(0.35);
+  };
+
+  const playGameplayMusic = () => {
+    audioRef.current?.playBGM("/audio/gameplay-loop.mp3");
+    audioRef.current?.setBGMVolume(0.4);
+  };
+
+  const stopMusic = () => {
+    audioRef.current?.stopBGM();
+  };
+
   // ---------- navigation ----------
   const goHome = () => {
     stopTimers();
@@ -585,7 +617,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   const goMulti = () => patch({ view: "multi" });
   const goBrowse = () => patch({ view: "browse" });
   const goCreate = () => {
-    patch({ view: "create", roomCode: numCode(), copyOk: false });
+    patch({ view: "create", copyOk: false });
     props.onCreateMultiplayer?.(stateRef.current.playerName || "You");
   };
   const goJoin = () => patch({ view: "join" });
@@ -595,8 +627,13 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     patch({ playerName: e.target.value, nameSaved: false });
   const onSaveName = (e: React.MouseEvent) => {
     e.preventDefault();
+    const name = stateRef.current.playerName;
+    if (containsProfanity(name)) {
+      patch({ playerName: "" });
+      return;
+    }
     try {
-      localStorage.setItem("quickeye_player_name", stateRef.current.playerName);
+      localStorage.setItem("quickeye_player_name", name);
     } catch {
       /* ignore */
     }
@@ -695,7 +732,13 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   const startMarathon = () => begin("marathon");
   const startRace = () => begin("race");
   const startPower = () => begin("power");
-  const startFromMulti = () => begin("marathon");
+  const startFromMulti = () => {
+    if (stateRef.current.isMultiplayer) {
+      props.onStartGame?.();
+    } else {
+      begin("marathon");
+    }
+  };
   const onPlayAgain = () => begin(stateRef.current.mode || "marathon");
 
   // ---------- powerups ----------
@@ -746,6 +789,14 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
       return;
     }
     if (s.cullIdx.includes(i) || s.popIdx.includes(i)) return;
+
+    // In multiplayer, submit to server instead of handling locally
+    if (s.isMultiplayer && s.gameId) {
+      patch({ locked: true });
+      props.onSubmitMatch?.(s.gameId, id);
+      return;
+    }
+
     if (id === r.shared) {
       const ns = s.scores.you + 1;
       audioRef.current?.chunk(ns);
@@ -833,9 +884,16 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   useEffect(() => {
     const v = st.view;
     const prev = prevViewRef.current;
-    if (prev !== "home" && v === "home") setTimeout(initHeader, 60);
+    if (prev !== "home" && v === "home") {
+      setTimeout(initHeader, 60);
+      playMenuMusic();
+    }
     if (prev === "home" && v !== "home") stopHeader();
-    if (prev === "playing" && v !== "playing") stopParticles();
+    if (v === "playing") {
+      playGameplayMusic();
+    } else if (v !== "playing" && prev === "playing") {
+      stopParticles();
+    }
     if (prev !== "over" && v === "over") {
       const rank = ranking(stateRef.current);
       const win = rank[0] && rank[0].id === "you";
@@ -849,6 +907,33 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     prevViewRef.current = v;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [st.view]);
+
+  // sync server game state and match results
+  useEffect(() => {
+    if (props.gameState) {
+      const gs = props.gameState;
+      patch({
+        isMultiplayer: true,
+        gameId: gs.gameId,
+        playerId: gs.playerId,
+      });
+    }
+    if (props.matchResult) {
+      if (props.matchResult.correct) {
+        audioRef.current?.chunk((stateRef.current.scores.you || 0) + 1);
+        patch((s) => ({ scores: { ...s.scores, you: s.scores.you + 1 } }));
+      } else {
+        audioRef.current?.wrongTone();
+        patch({ wrongId: props.matchResult.symbolId ?? -1, locked: true, shake: true });
+        setTimeout(() => patch({ shake: false }), 340);
+        setTimeout(() => patch({ wrongId: null, locked: false }), 400);
+      }
+    }
+    if (props.error) {
+      patch({ serverError: props.error });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.gameState, props.matchResult, props.error]);
 
   // ============================ sub-renders ============================
   const logoMark = (

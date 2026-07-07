@@ -1,42 +1,34 @@
 /**
- * Profanity filter for player names using the bad-words npm package.
- * Detects inappropriate language without false positives on normal names.
+ * Profanity filter for player names.
+ * Works both client-side and server-side.
  */
 
-import { Filter } from 'bad-words';
-
-// Initialize the filter once (singleton)
-let filterInstance: Filter | null = null;
-
-function getFilter(): Filter {
-  if (!filterInstance) {
-    filterInstance = new Filter();
-  }
-  return filterInstance;
-}
+const PROFANITIES = new Set([
+  'shit', 'fuck', 'cunt', 'bitch', 'asshole', 'bastard', 'damn', 'hell',
+  'dick', 'cock', 'pussy', 'ass', 'whore', 'slut', 'twat', 'piss', 'tits',
+  'boobs', 'crap', 'dang', 'darn', 'gosh', 'goddamn', 'motherfucker',
+]);
 
 export function containsProfanity(text: string): boolean {
   if (!text) return false;
-
-  const filter = getFilter();
-
-  // The bad-words filter checks if text contains any profanity
-  // Returns true if profanity is detected
-  return filter.isProfane(text.trim());
+  const lower = text.toLowerCase().trim();
+  // Check if any profanity word appears as a whole word or substring
+  for (const word of PROFANITIES) {
+    if (lower.includes(word)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
- * Sanitize a player name by replacing profanities with asterisks.
- * If the name consists entirely of profanity, returns empty string.
+ * Check if a player name is valid (not purely profanity, reasonable length).
+ * Returns empty string if invalid, otherwise returns the name.
  */
 export function sanitizePlayerName(name: string): string {
-  if (containsProfanity(name)) {
+  const trimmed = (name ?? '').trim().substring(0, 20);
+  if (!trimmed || containsProfanity(trimmed)) {
     return '';
   }
-
-  const filter = getFilter();
-  const sanitized = filter.clean(name.trim());
-
-  // Further validation: trim length and whitespace
-  return sanitized.replace(/\s+/g, ' ').substring(0, 20);
+  return trimmed.replace(/\s+/g, ' ');
 }
