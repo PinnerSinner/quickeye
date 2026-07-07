@@ -21,6 +21,24 @@ import type {
 import "./App.css";
 
 export default function App() {
+  const modeToGameMode = (clientMode: string) => {
+    const map: Record<string, string> = {
+      marathon: "time-attack-60",
+      race: "ten-rounds",
+      power: "difficulty-scaling",
+    };
+    return map[clientMode] || "time-attack-60";
+  };
+
+  const modeFromGameMode = (serverMode: string) => {
+    const map: Record<string, string> = {
+      "time-attack-60": "marathon",
+      "ten-rounds": "race",
+      "difficulty-scaling": "power",
+    };
+    return map[serverMode] || "marathon";
+  };
+
   const wsUrl = import.meta.env.VITE_WSS_URL || "";
   const ws = useWebSocket({ url: wsUrl, enabled: !!wsUrl });
   const [serverRoomCode, setServerRoomCode] = useState<string | null>(null);
@@ -67,9 +85,10 @@ export default function App() {
 
     const unsubLeaderboard = ws.on("leaderboard", (msg) => {
       const m = msg as LeaderboardMessage;
+      const clientMode = modeFromGameMode(m.gameMode);
       setLeaderboards((prev) => ({
         ...prev,
-        [m.gameMode]: m.entries,
+        [clientMode]: m.entries,
       }));
     });
 
@@ -122,15 +141,6 @@ export default function App() {
       gameId,
       symbolId,
     } as ClientMessage);
-  };
-
-  const modeToGameMode = (clientMode: string) => {
-    const map: Record<string, string> = {
-      marathon: "time-attack-60",
-      race: "ten-rounds",
-      power: "difficulty-scaling",
-    };
-    return map[clientMode] || "time-attack-60";
   };
 
   const handleQueryLeaderboard = (gameMode: string) => {
