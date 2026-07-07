@@ -138,13 +138,11 @@ export function applyMatch(
   return { correct: true, state: newState, gameOver };
 }
 
-/** Generate a short, human-typable room code (uppercase, no ambiguous chars). */
+/** Generate a 5-digit numeric room code. */
 export function generateRoomCode(rng: () => number = Math.random): string {
-  // Excludes 0/O, 1/I to avoid confusion when reading codes aloud.
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
-  for (let i = 0; i < 4; i++) {
-    code += alphabet[Math.floor(rng() * alphabet.length)];
+  for (let i = 0; i < 5; i++) {
+    code += Math.floor(rng() * 10);
   }
   return code;
 }

@@ -8,6 +8,7 @@ import {
   GameModeScreen,
   GameTypeScreen,
 } from "./screens";
+import { NavHeader } from "./components/NavHeader";
 import type {
   ClientMessage,
   JoinedMessage,
@@ -16,6 +17,7 @@ import type {
   GameMode,
 } from "@quickeye/shared";
 import "./App.css";
+import "./components/NavHeader.css";
 
 export default function App() {
   const game = useGame();
@@ -30,6 +32,16 @@ export default function App() {
   const [pendingCreateGameName, setPendingCreateGameName] = useState<string | null>(null);
   const [pendingGameType, setPendingGameType] = useState<"solo" | "vs-ai" | "multiplayer" | null>(null);
 
+  const handleHome = () => {
+    game.setState(null);
+    game.setGameId(null);
+    setShowLeaderboard(false);
+    setShowGameTypeSelection(false);
+    setShowGameModeSelection(false);
+    setPendingCreateGameName(null);
+    setPendingGameType(null);
+  };
+
   // Auto-save player name to localStorage
   const handleNameChange = (name: string) => {
     setSavedName(name);
@@ -42,6 +54,13 @@ export default function App() {
   const handleConnect = (url: string) => {
     setWsUrl(url);
   };
+
+  // Auto-connect if defaultUrl is already set
+  useEffect(() => {
+    if (defaultUrl && !wsUrl) {
+      setWsUrl(defaultUrl);
+    }
+  }, [defaultUrl, wsUrl]);
 
   // Listen for game messages
   useEffect(() => {
@@ -91,6 +110,7 @@ export default function App() {
   if (!ws.connected) {
     return (
       <div className="container">
+        <NavHeader onHome={handleHome} />
         <ConnectScreen
           onConnect={handleConnect}
           error={ws.error || undefined}
@@ -107,6 +127,7 @@ export default function App() {
   if (showGameTypeSelection && !pendingGameType) {
     return (
       <div className="container">
+        <NavHeader onHome={handleHome} />
         <GameTypeScreen
           onSelectType={(type) => {
             setPendingGameType(type);
@@ -130,6 +151,7 @@ export default function App() {
   if (showLeaderboard) {
     return (
       <div className="container">
+        <NavHeader onHome={handleHome} />
         <LeaderboardScreen onClose={() => setShowLeaderboard(false)} ws={ws} />
       </div>
     );
@@ -139,6 +161,7 @@ export default function App() {
   if (showGameTypeSelection) {
     return (
       <div className="container">
+        <NavHeader onHome={handleHome} />
         <GameTypeScreen
           onSelectType={(type) => {
             setPendingGameType(type);
@@ -160,6 +183,7 @@ export default function App() {
   if (showGameModeSelection) {
     return (
       <div className="container">
+        <NavHeader onHome={handleHome} />
         <GameModeScreen
           onSelectMode={(mode: GameMode) => {
             game.setGameMode(mode);
@@ -189,6 +213,7 @@ export default function App() {
   if (!game.state) {
     return (
       <div className="container">
+        <NavHeader onHome={handleHome} />
         <LobbyScreen
           state={null}
           playerId={game.playerId || ""}
@@ -225,6 +250,7 @@ export default function App() {
   if (game.state.status === "lobby") {
     return (
       <div className="container">
+        <NavHeader onHome={handleHome} />
         <LobbyScreen
           state={game.state}
           playerId={game.playerId || ""}
@@ -247,6 +273,7 @@ export default function App() {
 
   return (
     <div className="game-container">
+      <NavHeader onHome={handleHome} />
       <GameScreen
         state={game.state}
         playerId={game.playerId || ""}

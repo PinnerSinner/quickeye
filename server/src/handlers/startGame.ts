@@ -44,7 +44,10 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
       await sendError("ALREADY_STARTED", "Game already started.");
       return ok();
     }
-    if (game.players.length < GAME_CONFIG.minPlayers) {
+    // Solo/vs-ai games can start with any number of players (bots fill the gap)
+    // Multiplayer games need at least minPlayers
+    const isMultiplayer = game.gameType === "multiplayer";
+    if (isMultiplayer && game.players.length < GAME_CONFIG.minPlayers) {
       await sendError(
         "NOT_ENOUGH_PLAYERS",
         `Need at least ${GAME_CONFIG.minPlayers} players to start.`

@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import type { GameState, Player, GameMode } from "@quickeye/shared";
+import type { GameState, GameMode } from "@quickeye/shared";
 
 interface UseGameState {
   gameId: string | null;
@@ -11,10 +11,10 @@ interface UseGameState {
 }
 
 interface UseGameMethods {
-  setGameId: (id: string) => void;
+  setGameId: (id: string | null) => void;
   setPlayerId: (id: string) => void;
   setPlayerName: (name: string) => void;
-  setState: (state: GameState) => void;
+  setState: (state: GameState | null) => void;
   setError: (error: string | null) => void;
   setGameMode: (mode: GameMode) => void;
   clear: () => void;
