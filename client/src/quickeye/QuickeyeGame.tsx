@@ -52,6 +52,7 @@ type View =
   | "create"
   | "join"
   | "leaderboard"
+  | "lobby"
   | "playing"
   | "over";
 
@@ -651,6 +652,10 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     audioRef.current?.navigate();
     patch({ view: "join" });
   };
+  const goLobby = () => {
+    audioRef.current?.navigate();
+    patch({ view: "lobby" });
+  };
   const goLeaders = () => {
     audioRef.current?.navigate();
     patch({ view: "leaderboard" });
@@ -977,11 +982,12 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   useEffect(() => {
     if (props.gameState) {
       const gs = props.gameState;
-      patch({
+      patch((s) => ({
         isMultiplayer: true,
         gameId: gs.gameId,
         playerId: gs.playerId,
-      });
+        view: s.view === "join" || s.view === "browse" ? "lobby" : s.view,
+      }));
     }
     if (props.matchResult) {
       if (props.matchResult.correct) {
@@ -1069,27 +1075,45 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   );
 
   const smallHeader = (title: string, onBack: () => void) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22 }}>
-      <button className="qhov" onClick={onBack} style={backBtnStyle}>
-        ‹
-      </button>
-      <div
-        className="qlogo"
-        onClick={goHome}
-        style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
-      >
-        {logoMark(34, 14, [14, 5], false)}
+    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22, justifyContent: "space-between" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <button className="qhov" onClick={onBack} style={backBtnStyle}>
+          ‹
+        </button>
         <div
-          style={{
-            font: "900 22px 'Outfit',sans-serif",
-            textTransform: "uppercase",
-            letterSpacing: "-1px",
-            color: "#F0F0F0",
-          }}
+          className="qlogo"
+          onClick={goHome}
+          style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
         >
-          {title}
+          {logoMark(34, 14, [14, 5], false)}
+          <div
+            style={{
+              font: "900 22px 'Outfit',sans-serif",
+              textTransform: "uppercase",
+              letterSpacing: "-1px",
+              color: "#F0F0F0",
+            }}
+          >
+            {title}
+          </div>
         </div>
       </div>
+      <button className="qhov" onClick={toggleSound} style={{
+        width: 40,
+        height: 40,
+        borderRadius: "50%",
+        background: st.soundEnabled ? "#22C55E" : "#666",
+        border: "3px solid #000",
+        color: "#fff",
+        font: "900 18px 'Outfit',sans-serif",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flex: "none",
+      }}>
+        {st.soundEnabled ? "♪" : "✕"}
+      </button>
     </div>
   );
 
@@ -1164,11 +1188,15 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
       { c: st.browseCodes[1], h: OPP_POOL[3], n: 2 },
       { c: st.browseCodes[2], h: OPP_POOL[6], n: 1 },
     ];
+    const joinBrowseGame = (code: string) => {
+      audioRef.current?.menuClick();
+      props.onJoinMultiplayer?.(code, stateRef.current.playerName || "You");
+    };
     return rooms.map((rm, i) => (
       <button
         key={i}
         className="qhov"
-        onClick={startFromMulti}
+        onClick={() => joinBrowseGame(rm.c)}
         style={{
           background: "#fff",
           border: "4px solid #000",
@@ -2088,7 +2116,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 }}
               >
                 <span style={{ font: "900 3rem/1 'Outfit',sans-serif", color: "#121212", letterSpacing: "10px" }}>
-                  {props.serverRoomCode || st.roomCode}
+                  {st.roomCode}
                 </span>
               </div>
               <button
@@ -2116,6 +2144,42 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             </div>
             <button className="qhov" onClick={startFromMulti} style={primaryWide}>
               Start Game
+            </button>
+          </div>
+        )}
+
+        {/* ===== LOBBY ===== */}
+        {st.view === "lobby" && (
+          <div style={panelStyle(520)}>
+            {smallHeader("Waiting Room", goMulti)}
+            <div style={{ textAlign: "center", marginBottom: 30 }}>
+              <div style={{ font: "500 13px 'Outfit',sans-serif", color: "#999", marginBottom: 10 }}>
+                GAME CODE
+              </div>
+              <div style={{ font: "900 3.5rem 'Outfit',sans-serif", color: "#F0C020", letterSpacing: "12px", marginBottom: 20 }}>
+                {st.roomCode}
+              </div>
+              <div style={{ font: "500 13px/1.5 'Outfit',sans-serif", color: "#bbb" }}>
+                {st.isMultiplayer && st.playerId ? "Waiting for host to start..." : "Waiting for players..."}
+              </div>
+            </div>
+            <button
+              className="qhov"
+              onClick={() => {
+                audioRef.current?.menuClick();
+                props.onStartGame?.();
+              }}
+              style={primaryWide}
+              disabled={!st.isMultiplayer}
+            >
+              Start Game
+            </button>
+            <button
+              className="qhov"
+              onClick={goMulti}
+              style={{...primaryWide, background: "#666", marginTop: 10}}
+            >
+              Back to Menu
             </button>
           </div>
         )}
