@@ -5,6 +5,7 @@ import {
   findMatchingSymbol,
 } from "../utils/deck";
 import { GeometricGlyph } from "../components/GeometricGlyph";
+import { QEyeLogo } from "../components/QEyeLogo";
 import "./GameScreen.css";
 
 interface GameScreenProps {
@@ -27,6 +28,8 @@ export function GameScreen({
   const playerCardId = currentPlayer?.currentCardId;
 
   const [matchingSymbolId, setMatchingSymbolId] = useState<number | null>(null);
+  const [feedbackSymbolId, setFeedbackSymbolId] = useState<number | null>(null);
+  const [feedbackType, setFeedbackType] = useState<"correct" | "wrong" | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
   // Get max time based on game mode
@@ -38,22 +41,6 @@ export function GameScreen({
 
   const maxTime = getMaxTime();
   const [timeRemaining, setTimeRemaining] = useState(maxTime);
-
-  // Debug logging
-  useEffect(() => {
-    console.log("GameScreen state:", {
-      centerCardId,
-      playerCardId,
-      playerCount: state.players.length,
-      status: state.status,
-    });
-  }, [centerCardId, playerCardId, state.players.length, state.status]);
-
-  // TODO: Fix findMatch to work with client deck structure
-  // For now, disable matching symbol highlighting so the game can render
-  useEffect(() => {
-    setMatchingSymbolId(null);
-  }, [centerCardId, playerCardId]);
 
   // Timer countdown
   useEffect(() => {
@@ -72,14 +59,6 @@ export function GameScreen({
     return () => clearInterval(interval);
   }, [state.status, maxTime]);
 
-  // Detect when time runs out and show game over
-  useEffect(() => {
-    if (timeRemaining === 0 && state.status === "playing") {
-      // Time's up - trigger game over
-      // In a real scenario, server would handle this, but for UX we show it immediately
-    }
-  }, [timeRemaining, state.status]);
-
   const centerSymbols =
     centerCardId !== null && centerCardId !== undefined
       ? getCardSymbols(centerCardId) || []
@@ -89,119 +68,157 @@ export function GameScreen({
       ? getCardSymbols(playerCardId) || []
       : [];
 
-  // Ensure symbols are arrays
   const safeCenter = Array.isArray(centerSymbols) ? centerSymbols : [];
   const safePlayer = Array.isArray(playerSymbols) ? playerSymbols : [];
 
   const handleSymbolClick = (symbolId: number) => {
     if (submitted) return;
     setSubmitted(true);
+    setFeedbackSymbolId(symbolId);
+    setFeedbackType("correct"); // Optimistic feedback; server will correct if wrong
     onSubmitMatch(symbolId);
-    setTimeout(() => setSubmitted(false), 1000);
+    setTimeout(() => {
+      setSubmitted(false);
+      setFeedbackSymbolId(null);
+      setFeedbackType(null);
+    }, 450);
   };
 
-  // Calculate scale factor based on time remaining
-  // Only applies to time-attack mode; other modes have no shrinking
   const getSymbolScale = () => {
-    if (maxTime === 999999) return 1.0; // No shrinking for unlimited-time modes
+    if (maxTime === 999999) return 1.0;
     const scale = Math.max(0.7, 1 - (maxTime - timeRemaining) * (0.3 / maxTime));
     return scale;
   };
 
   const symbolScale = getSymbolScale();
-
-  // Show game over when time runs out
   const isTimeUp = timeRemaining === 0 && state.status === "playing";
+  const isDanger = timeRemaining <= 5 && timeRemaining > 0;
+  const progressPercent = (timeRemaining / maxTime) * 100;
+
+  // Sort players by score for leaderboard
+  const sortedPlayers = [...state.players].sort((a, b) => b.score - a.score);
 
   return (
     <div className="game-screen">
+      {/* Header */}
       <div className="game-header">
-        <h1>Quickeye</h1>
-        <div className={`timer ${timeRemaining <= 5 ? "danger" : ""}`}>
-          <span>{timeRemaining}s</span>
+        <div className="header-left">
+          <div className="header-logo">
+            <QEyeLogo size="sm" includeWordmark={false} />
+          </div>
+          <h1>QUICKEYE</h1>
+        </div>
+        <button className="quit-btn">✕ QUIT</button>
+        <div className={`header-timer ${isDanger ? "danger" : ""}`}>
+          <div className="timer-number">{timeRemaining}</div>
+          <div className="timer-label">SEC</div>
         </div>
       </div>
 
+      {/* Progress bar */}
+      {maxTime !== 999999 && (
+        <div className="progress-bar-container">
+          <div
+            className={`progress-bar-fill ${isDanger ? "danger" : ""}`}
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      )}
+
+      {/* Game board - two panels */}
       <div className="game-board">
-        <div className="card-section">
-          <h3>Match Board</h3>
-          <div className="card center-card">
-            <div className="card-symbols" style={{ transform: `scale(${symbolScale})` }}>
-              {safeCenter.map((symbolId) => (
+        <div className="game-panel center-panel">
+          <div className="panel-header red-header">
+            <span>Match Board</span>
+          </div>
+          <div className="symbol-grid">
+            {safeCenter.map((symbolId) => (
+              <div
+                key={symbolId}
+                className="symbol-tile"
+                style={{ transform: `scale(${symbolScale})` }}
+              >
+                <GeometricGlyph symbolId={symbolId} size={52} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="game-panel player-panel">
+          <div className="panel-header blue-header">
+            <span>You — tap the match</span>
+          </div>
+          <div className="symbol-grid">
+            {safePlayer.map((symbolId) => (
+              <button
+                key={symbolId}
+                className={`symbol-button ${
+                  feedbackSymbolId === symbolId ? `feedback-${feedbackType}` : ""
+                } ${submitted ? "disabled" : ""}`}
+                onClick={() => handleSymbolClick(symbolId)}
+                disabled={submitted}
+                style={{ transform: `scale(${symbolScale})` }}
+              >
+                <GeometricGlyph symbolId={symbolId} size={52} />
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Live leaderboard */}
+      <div className="leaderboard">
+        <div className="leaderboard-label">Live Standings</div>
+        <div className="leaderboard-container">
+          {sortedPlayers.map((player, idx) => (
+            <div
+              key={player.playerId}
+              className={`leaderboard-card ${idx === 0 ? "first-place" : ""}`}
+              style={{
+                transform: `translateX(${idx * 257}px)`,
+              }}
+            >
+              <div className={`rank-chip ${idx === 0 ? "first" : ""}`}>
+                {idx + 1}
+              </div>
+              <div className="player-name">{player.name}</div>
+              <div className="player-score">{player.score}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Game over overlay */}
+      {(state.status === "finished" || isTimeUp) && (
+        <div className="game-over-overlay">
+          <div className="game-over-card">
+            <div className="game-over-header">{isTimeUp ? "TIME UP" : "GAME OVER"}</div>
+            <h2 className="game-over-title">
+              {sortedPlayers[0]?.name.toUpperCase()} WINS
+            </h2>
+
+            <div className="final-standings">
+              {sortedPlayers.map((player, idx) => (
                 <div
-                  key={symbolId}
-                  className="symbol-box"
+                  key={player.playerId}
+                  className={`standing-row ${idx === 0 ? "winner" : ""}`}
+                  style={{
+                    animation: `qe-pop 0.4s ease-out ${idx * 0.08}s both`,
+                  }}
                 >
-                  <GeometricGlyph symbolId={symbolId} size={52} />
+                  <div className="standing-rank">{idx === 0 ? "🥇" : idx === 1 ? "🥈" : "🥉"}</div>
+                  <div className="standing-name">{player.name}</div>
+                  <div className="standing-score">{player.score} pts</div>
                 </div>
               ))}
             </div>
-          </div>
-        </div>
 
-        <div className="card-section">
-          <h3>{currentPlayer?.name || "Your Hand"}</h3>
-          <div className="card player-card">
-            <div className="card-symbols" style={{ transform: `scale(${symbolScale})` }}>
-              {safePlayer.map((symbolId) => (
-                <button
-                  key={symbolId}
-                  className={`symbol-button ${
-                    matchingSymbolId === symbolId ? "matching" : ""
-                  } ${submitted ? "disabled" : ""}`}
-                  onClick={() => handleSymbolClick(symbolId)}
-                  disabled={submitted}
-                >
-                  <GeometricGlyph symbolId={symbolId} size={52} />
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="scores">
-        <h3>Scores</h3>
-        <ul>
-          {state.players.map((player) => (
-            <li key={player.playerId}>
-              {player.name}: {player.score}
-              {player.playerId === playerId && " ← you"}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {(state.status === "finished" || isTimeUp) && (
-        <div className="game-over-overlay">
-          <div className="game-over">
-            <h2>{isTimeUp ? "Time Up" : "Game Over"}</h2>
-            <div className="final-scores">
-              <h3>Final Scores</h3>
-              {state.players
-                .sort((a, b) => b.score - a.score)
-                .map((player, idx) => (
-                  <div
-                    key={player.playerId}
-                    className={`score-row ${idx === 0 ? "winner" : ""}`}
-                  >
-                    <span className="medal">
-                      {idx === 0 ? "1st" : idx === 1 ? "2nd" : "3rd"}
-                    </span>
-                    <span className="name">
-                      {player.name}
-                      {player.playerId === playerId && " (you)"}
-                    </span>
-                    <span className="score">{player.score} pts</span>
-                  </div>
-                ))}
-            </div>
             <div className="game-over-buttons">
-              <button className="rematch-btn" onClick={onRematch}>
-                Play Again
+              <button className="button-play-again" onClick={onRematch}>
+                PLAY AGAIN
               </button>
-              <button className="return-btn" onClick={onReturnLobby}>
-                Return to Lobby
+              <button className="button-menu" onClick={onReturnLobby}>
+                MENU
               </button>
             </div>
           </div>
