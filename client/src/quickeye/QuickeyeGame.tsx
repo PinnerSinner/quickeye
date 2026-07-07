@@ -89,6 +89,8 @@ interface QState {
   gameId: string | null;
   playerId: string | null;
   serverError: string | null;
+  soundEnabled: boolean;
+  browseCodes: string[];
 }
 
 export interface QuickeyeGameProps {
@@ -100,6 +102,8 @@ export interface QuickeyeGameProps {
   onStartGame?: () => void;
   /** Called when a player submits a symbol match. */
   onSubmitMatch?: (gameId: string, symbolId: number) => void;
+  /** Called to query leaderboard data from server. */
+  onQueryLeaderboard?: (gameMode: string) => void;
   /** A server-issued room code to display on the Create screen, if available. */
   serverRoomCode?: string | null;
   /** Server game state (multiplayer games). */
@@ -108,6 +112,8 @@ export interface QuickeyeGameProps {
   matchResult?: { correct: boolean; symbolId?: number; gameOver?: boolean } | null;
   /** Error message from server. */
   error?: string | null;
+  /** Leaderboard data from server. */
+  leaderboards?: Record<string, any[]>;
 }
 
 const OPP_INTERVAL_MS = 3000; // "Normal" opponent pace
@@ -149,6 +155,8 @@ function initialState(): QState {
     gameId: null,
     playerId: null,
     serverError: null,
+    soundEnabled: true,
+    browseCodes: ["7241", "5893", "4156"], // Static room codes for browse list
   };
 }
 
@@ -608,6 +616,14 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     audioRef.current?.stopBGM();
   };
 
+  const toggleSound = () => {
+    patch((s) => {
+      const newEnabled = !s.soundEnabled;
+      audioRef.current!.enabled = newEnabled;
+      return { soundEnabled: newEnabled };
+    });
+  };
+
   // ---------- navigation ----------
   const goHome = () => {
     audioRef.current?.navigate();
@@ -921,14 +937,22 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     const prev = prevViewRef.current;
     if (prev !== "home" && v === "home") {
       setTimeout(initHeader, 60);
-      playMenuMusic();
     }
     if (prev === "home" && v !== "home") stopHeader();
-    if (v === "playing") {
+
+    // Only switch music when entering/leaving gameplay, not on menu transitions
+    if (v === "playing" && prev !== "playing") {
       playGameplayMusic();
     } else if (v !== "playing" && prev === "playing") {
       stopParticles();
+      playMenuMusic();
     }
+
+    // First-time menu music on mount
+    if (prev === "home" && v === "home" && st.view === "home") {
+      playMenuMusic();
+    }
+
     if (prev !== "over" && v === "over") {
       const rank = ranking(stateRef.current);
       const win = rank[0] && rank[0].id === "you";
@@ -939,6 +963,12 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
       setTimeout(() => startConfetti(!!win), 40);
     }
     if (prev === "over" && v !== "over") stopConfetti();
+
+    // Query leaderboard when entering leaderboard view
+    if (prev !== "leaderboard" && v === "leaderboard") {
+      props.onQueryLeaderboard?.(st.leaderTab);
+    }
+
     prevViewRef.current = v;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [st.view]);
@@ -969,6 +999,14 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.gameState, props.matchResult, props.error]);
+
+  // Query leaderboard when tab changes
+  useEffect(() => {
+    if (st.view === "leaderboard") {
+      props.onQueryLeaderboard?.(st.leaderTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [st.leaderTab]);
 
   // ============================ sub-renders ============================
   const logoMark = (
@@ -1122,9 +1160,9 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
 
   const browseList = () => {
     const rooms = [
-      { c: numCode(), h: OPP_POOL[0], n: 1 },
-      { c: numCode(), h: OPP_POOL[3], n: 2 },
-      { c: numCode(), h: OPP_POOL[6], n: 1 },
+      { c: st.browseCodes[0], h: OPP_POOL[0], n: 1 },
+      { c: st.browseCodes[1], h: OPP_POOL[3], n: 2 },
+      { c: st.browseCodes[2], h: OPP_POOL[6], n: 1 },
     ];
     return rooms.map((rm, i) => (
       <button
@@ -1180,8 +1218,9 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     const tab = st.leaderTab;
     const race = tab === "race";
     const best = bestFor(tab);
+    const serverEntries = props.leaderboards?.[tab] || [];
     const rows = [
-      ...LB[tab].map((r) => ({ name: r.n, v: r.v as number | null, you: false })),
+      ...serverEntries.map((r: any) => ({ name: r.name || r.n, v: r.score as number | null, you: false })),
       { name: st.playerName || "You", v: best == null ? (race ? null : 0) : best, you: true },
     ];
     rows.sort((a, b) => {
@@ -1750,12 +1789,12 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                   cursor: "pointer",
                 }}
               >
-                {logoMark(68, 27, [27, 9], true)}
+                {logoMark(100, 40, [40, 13], true)}
                 <div
                   style={{
-                    font: "900 34px/1 'Outfit',sans-serif",
+                    font: "900 48px/1 'Outfit',sans-serif",
                     textTransform: "uppercase",
-                    letterSpacing: "-1.5px",
+                    letterSpacing: "-2px",
                     color: "#fff",
                   }}
                 >
@@ -2100,10 +2139,11 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 letterSpacing: "10px",
                 textAlign: "center",
                 border: "4px solid #000",
-                background: "#F0F0F0",
+                background: "#F0C020",
                 boxSizing: "border-box",
                 color: "#121212",
                 margin: "10px 0 20px",
+                outline: "none",
               }}
             />
             <button
@@ -2456,17 +2496,24 @@ const backBtnStyle: CSSProperties = {
 function carouselArrow(side: "left" | "right"): CSSProperties {
   return {
     position: "absolute",
-    [side]: 0,
+    [side]: -8,
     top: "50%",
     transform: "translateY(-50%)",
-    width: 34,
-    height: 34,
-    background: "#121212",
+    width: 50,
+    height: 50,
+    background: "#D02020",
     color: "#fff",
-    border: "3px solid #3a3a3a",
-    font: "900 16px 'Outfit',sans-serif",
+    border: "4px solid #000",
+    borderRadius: "4px",
+    font: "900 28px 'Outfit',sans-serif",
     cursor: "pointer",
     zIndex: 2,
+    boxShadow: "4px 4px 0 0 #000",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "all 150ms",
+    padding: 0,
   };
 }
 const darkMenuBtn: CSSProperties = {

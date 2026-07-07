@@ -15,6 +15,8 @@ import type {
   StateUpdateMessage,
   MatchResultMessage,
   ErrorMessage,
+  LeaderboardMessage,
+  LeaderboardEntry,
 } from "@quickeye/shared";
 import "./App.css";
 
@@ -29,6 +31,11 @@ export default function App() {
     gameOver?: boolean;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [leaderboards, setLeaderboards] = useState<Record<string, LeaderboardEntry[]>>({
+    marathon: [],
+    race: [],
+    power: [],
+  });
 
   useEffect(() => {
     const unsubJoined = ws.on("joined", (msg) => {
@@ -55,11 +62,20 @@ export default function App() {
       setTimeout(() => setError(null), 3000);
     });
 
+    const unsubLeaderboard = ws.on("leaderboard", (msg) => {
+      const m = msg as LeaderboardMessage;
+      setLeaderboards((prev) => ({
+        ...prev,
+        [m.gameMode]: m.entries,
+      }));
+    });
+
     return () => {
       unsubJoined();
       unsubStateUpdate();
       unsubMatchResult();
       unsubError();
+      unsubLeaderboard();
     };
   }, [ws]);
 
@@ -100,6 +116,16 @@ export default function App() {
     } as ClientMessage);
   };
 
+  const handleQueryLeaderboard = (gameMode: string) => {
+    if (!wsUrl) return;
+    ws.send({
+      action: "queryLeaderboard",
+      gameMode: gameMode as any,
+      period: "all-time",
+      limit: 50,
+    } as ClientMessage);
+  };
+
   return (
     <div className="qe-app-shell">
       <QuickeyeGame
@@ -107,10 +133,12 @@ export default function App() {
         onJoinMultiplayer={handleJoinMultiplayer}
         onStartGame={handleStartGame}
         onSubmitMatch={handleSubmitMatch}
+        onQueryLeaderboard={handleQueryLeaderboard}
         serverRoomCode={serverRoomCode}
         gameState={gameState}
         matchResult={matchResult}
         error={error}
+        leaderboards={leaderboards}
       />
     </div>
   );
