@@ -2106,7 +2106,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 }}
               >
                 <span style={{ font: "900 3rem/1 'Outfit',sans-serif", color: "#121212", letterSpacing: "10px" }}>
-                  {st.roomCode}
+                  {props.gameState?.gameId || "..."}
                 </span>
               </div>
               <button
