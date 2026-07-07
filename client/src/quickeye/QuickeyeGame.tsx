@@ -678,7 +678,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     saveTORef.current = window.setTimeout(() => patch({ nameSaved: false }), 1800);
   };
   const onCode = (e: React.ChangeEvent<HTMLInputElement>) =>
-    patch({ joinCode: e.target.value.replace(/\D/g, "").slice(0, 4) });
+    patch({ joinCode: e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 4) });
   const onCopyCode = () => {
     audioRef.current?.menuClick();
     try {
@@ -2104,7 +2104,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             >
               ↻ Refresh Games
             </button>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{browseList()}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 300, overflowY: "auto" }}>{browseList()}</div>
           </div>
         )}
 
@@ -2206,7 +2206,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
         {st.view === "join" && (
           <div style={panelStyle(520)}>
             {smallHeader("Join Room", goMulti)}
-            <div style={labelStyle}>Room code (4 digits)</div>
+            <div style={labelStyle}>Room code (4 characters)</div>
             <input
               className="qe-input"
               value={st.joinCode}

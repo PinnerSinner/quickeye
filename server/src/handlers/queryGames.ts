@@ -25,14 +25,16 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
 
   try {
     // Scan for all lobby games (skip finished/playing games)
+    const now = Math.floor(Date.now() / 1000);
     const res = await doc.send(
       new ScanCommand({
         TableName: GAMES_TABLE,
-        FilterExpression: "#status = :lobby AND #created > :recent",
-        ExpressionAttributeNames: { "#status": "status", "#created": "createdAt" },
+        FilterExpression: "#status = :lobby AND #created > :recent AND #gtype = :mp",
+        ExpressionAttributeNames: { "#status": "status", "#created": "createdAt", "#gtype": "gameType" },
         ExpressionAttributeValues: {
           ":lobby": "lobby",
-          ":recent": Math.floor(Date.now() / 1000) - 1800, // Last 30 minutes
+          ":recent": now - 600, // Last 10 minutes only (stale games excluded)
+          ":mp": "multiplayer",
         },
       })
     );

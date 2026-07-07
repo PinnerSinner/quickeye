@@ -138,11 +138,12 @@ export function applyMatch(
   return { correct: true, state: newState, gameOver };
 }
 
-/** Generate a 5-digit numeric room code. */
+/** Generate a 4-char alphanumeric room code (e.g., "9WCU"). */
 export function generateRoomCode(rng: () => number = Math.random): string {
+  const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let code = "";
-  for (let i = 0; i < 5; i++) {
-    code += Math.floor(rng() * 10);
+  for (let i = 0; i < 4; i++) {
+    code += chars[Math.floor(rng() * chars.length)];
   }
   return code;
 }

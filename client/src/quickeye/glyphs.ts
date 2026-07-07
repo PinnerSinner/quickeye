@@ -11,7 +11,8 @@ export const PALETTE = {
   red: "#FF3333",
   blue: "#3366FF",
   yellow: "#FFD700",
-  cyan: "#00D9FF",
+  lime: "#00FF66",
+  violet: "#8B5CF6",
 } as const;
 
 /** clip-path polygons for the non-primitive shapes. */
@@ -21,8 +22,6 @@ export const CLIPS: Record<string, string> = {
   hexagon: "polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%)",
   star: "polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)",
   plus: "polygon(36% 0,64% 0,64% 36%,100% 36%,100% 64%,64% 64%,64% 100%,36% 100%,36% 64%,0 64%,0 36%,36% 36%)",
-  heart: "polygon(50% 100%, 15% 60%, 5% 40%, 5% 25%, 15% 15%, 50% 40%, 85% 15%, 95% 25%, 95% 40%, 85% 60%)",
-  moon: "polygon(50% 0%, 100% 50%, 50% 100%, 30% 85%, 30% 15%)",
 };
 
 export type GlyphColor = keyof typeof PALETTE;
@@ -31,40 +30,43 @@ export interface Glyph {
   c: GlyphColor;
 }
 
-/** The 32-symbol set: 4 colors × 8 shapes. Easier to distinguish. */
+/** The 35-symbol set: 5 colors × 7 shapes. Proven to work. */
 export const GLYPHS: Glyph[] = [
   { t: "circle", c: "red" },
   { t: "square", c: "red" },
   { t: "triangle", c: "red" },
-  { t: "star", c: "red" },
   { t: "diamond", c: "red" },
-  { t: "heart", c: "red" },
-  { t: "moon", c: "red" },
+  { t: "star", c: "red" },
   { t: "plus", c: "red" },
+  { t: "hexagon", c: "red" },
   { t: "circle", c: "blue" },
   { t: "square", c: "blue" },
   { t: "triangle", c: "blue" },
-  { t: "star", c: "blue" },
   { t: "diamond", c: "blue" },
-  { t: "heart", c: "blue" },
-  { t: "moon", c: "blue" },
+  { t: "star", c: "blue" },
   { t: "plus", c: "blue" },
+  { t: "hexagon", c: "blue" },
   { t: "circle", c: "yellow" },
   { t: "square", c: "yellow" },
   { t: "triangle", c: "yellow" },
-  { t: "star", c: "yellow" },
   { t: "diamond", c: "yellow" },
-  { t: "heart", c: "yellow" },
-  { t: "moon", c: "yellow" },
+  { t: "star", c: "yellow" },
   { t: "plus", c: "yellow" },
-  { t: "circle", c: "cyan" },
-  { t: "square", c: "cyan" },
-  { t: "triangle", c: "cyan" },
-  { t: "star", c: "cyan" },
-  { t: "diamond", c: "cyan" },
-  { t: "heart", c: "cyan" },
-  { t: "moon", c: "cyan" },
-  { t: "plus", c: "cyan" },
+  { t: "hexagon", c: "yellow" },
+  { t: "circle", c: "lime" },
+  { t: "square", c: "lime" },
+  { t: "triangle", c: "lime" },
+  { t: "diamond", c: "lime" },
+  { t: "star", c: "lime" },
+  { t: "plus", c: "lime" },
+  { t: "hexagon", c: "lime" },
+  { t: "circle", c: "violet" },
+  { t: "square", c: "violet" },
+  { t: "triangle", c: "violet" },
+  { t: "diamond", c: "violet" },
+  { t: "star", c: "violet" },
+  { t: "plus", c: "violet" },
+  { t: "hexagon", c: "violet" },
 ];
 
 /** Iris colours the Q-eye logo cycles through on each blink. */
