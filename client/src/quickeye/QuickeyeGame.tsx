@@ -685,11 +685,6 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
         audioRef.current?.censorBeep();
       }, 400);
 
-      // Laugh emoji at ~800ms
-      saveTORef.current = window.setTimeout(() => {
-        patch({ eyeExpression: "laughing" });
-      }, 800);
-
       // Reset to normal after 2s
       saveTORef.current = window.setTimeout(() => {
         patch({ eyePokes: 0, eyeExpression: "normal" });
@@ -1164,25 +1159,6 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
       );
     }
 
-    if (isLaughing) {
-      return (
-        <div
-          style={{
-            width: discSize,
-            height: discSize,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: discSize * 0.8,
-            cursor: interactive ? "pointer" : "default",
-            animation: "qe-bounce 0.4s ease-in-out",
-          }}
-          onClick={interactive ? pokeEye : undefined}
-        >
-          😂
-        </div>
-      );
-    }
 
     let irisOffset = [0, 0];
     let irisScale = 1;
@@ -1251,10 +1227,10 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            animation: "qe-blink 3.4s ease-in-out infinite",
             overflow: "hidden",
             position: "relative",
-            boxShadow: `inset 0 0 20px ${iris}40, 0 0 15px ${iris}30`,
+            color: iris,
+            animation: `qe-blink 3.4s ease-in-out infinite, qe-eye-glow 1.8s ease-in-out infinite`,
           }}
         >
           {eyeLidTop !== 0 && (
@@ -1278,13 +1254,11 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               height: irisSize * irisScale,
               borderRadius: "50%",
               background: iris,
-              color: iris,
-              transition: tracking ? "none" : "background 240ms ease, width 200ms ease, height 200ms ease, color 240ms ease",
+              transition: tracking ? "none" : "background 240ms ease, width 200ms ease, height 200ms ease",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               transform: tracking ? `translate(${irisOffset[0]}px, ${irisOffset[1]}px)` : undefined,
-              animation: "qe-iris-glow 1.8s ease-in-out infinite",
             }}
           >
             {withPupil && (
@@ -1963,7 +1937,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
       <div className="qe-root">
         {/* ===== HOME ===== */}
         {st.view === "home" && (
-          <div style={panelStyle(720, true)}>
+          <div style={{ ...panelStyle(720, true), animation: "qe-menu-fade-in 0.5s ease-out" }}>
             <div style={{ position: "relative" }}>
               <div
                 ref={hdrRef}
@@ -2011,14 +1985,16 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 </div>
                 <div
                   style={{
-                    font: "900 32px/1 'Outfit',sans-serif",
+                    font: "900 38px/0.95 'Outfit',sans-serif",
                     textTransform: "uppercase",
-                    letterSpacing: "1px",
+                    letterSpacing: "-1px",
                     color: "#fff",
-                    textShadow: `0 0 20px ${iris}, 0 0 40px ${iris}40, 0 0 60px ${iris}20`,
+                    textShadow: `0 2px 4px #00000080, 0 0 20px ${iris}, 0 0 40px ${iris}40, 0 0 60px ${iris}20`,
                     animation: "qe-glow 2s ease-in-out infinite",
                     position: "relative",
                     zIndex: 1,
+                    fontStyle: "italic",
+                    fontWeight: 900,
                   }}
                 >
                   Quickeye
@@ -2090,6 +2066,55 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                   </div>
                 </div>
                 {colorCarousel()}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: 12,
+                    marginTop: 16,
+                  }}
+                >
+                  <a
+                    href="https://marcoverse.co.uk"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Visit marcoverse.co.uk"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 24,
+                      height: 24,
+                      transition: "opacity 200ms",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.7")}
+                    onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+                  >
+                    <img src="/marcoverse-logo.png" alt="marcoverse" style={{ width: "100%", height: "100%" }} />
+                  </a>
+                  <a
+                    href="https://github.com/mballalbarran/quickeye"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="View source on GitHub"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 24,
+                      height: 24,
+                      color: "#666",
+                      textDecoration: "none",
+                      transition: "color 200ms",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#000")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#666")}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                    </svg>
+                  </a>
+                </div>
               </div>
               <div
                 style={{ width: 268, flex: "none", display: "flex", flexDirection: "column", gap: 12 }}
@@ -2141,64 +2166,12 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 </button>
               </div>
             </div>
-            <div
-              style={{
-                padding: "0 30px 12px",
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: 12,
-              }}
-            >
-              <a
-                href="https://marcoverse.co.uk"
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Visit marcoverse.co.uk"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 20,
-                  height: 20,
-                  color: "#666",
-                  textDecoration: "none",
-                  transition: "color 200ms",
-                  fontSize: 14,
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#999")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#666")}
-              >
-                🌐
-              </a>
-              <a
-                href="https://github.com/mballalbarran/quickeye"
-                target="_blank"
-                rel="noopener noreferrer"
-                title="View source on GitHub"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 20,
-                  height: 20,
-                  color: "#666",
-                  textDecoration: "none",
-                  transition: "color 200ms",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#000")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#666")}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
-                </svg>
-              </a>
-            </div>
           </div>
         )}
 
         {/* ===== SOLO ===== */}
         {st.view === "solo" && (
-          <div style={panelStyle(680)}>
+          <div style={{ ...panelStyle(680), animation: "qe-menu-fade-in 0.5s ease-out" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 8 }}>
               <button className="qhov" onClick={goHome} style={backBtnStyle}>
                 ‹
@@ -2236,14 +2209,15 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 <span style={modeTitle}>Marathon</span>
                 <span
                   style={{
-                    display: "inline-block",
-                    background: "rgba(255,255,255,0.2)",
-                    padding: "4px 10px",
-                    borderRadius: "12px",
-                    font: "500 9px 'Outfit', sans-serif",
+                    display: "block",
+                    background: "rgba(255,255,255,0.25)",
+                    padding: "8px 14px",
+                    borderRadius: "16px",
+                    font: "600 11px 'Outfit', sans-serif",
                     letterSpacing: "0.5px",
-                    opacity: 0.9,
-                    marginTop: 4,
+                    opacity: 0.95,
+                    marginTop: 8,
+                    textAlign: "center",
                   }}
                 >
                   60 seconds
@@ -2255,14 +2229,15 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 <span style={modeTitle}>Race the Clock</span>
                 <span
                   style={{
-                    display: "inline-block",
-                    background: "rgba(0,0,0,0.15)",
-                    padding: "6px 12px",
-                    borderRadius: "14px",
-                    font: "900 10px 'Outfit', sans-serif",
+                    display: "block",
+                    background: "rgba(0,0,0,0.2)",
+                    padding: "10px 16px",
+                    borderRadius: "18px",
+                    font: "900 12px 'Outfit', sans-serif",
                     letterSpacing: "1px",
-                    opacity: 0.95,
-                    marginTop: 4,
+                    opacity: 1,
+                    marginTop: 8,
+                    textAlign: "center",
                   }}
                 >
                   FIRST TO 7
@@ -2276,14 +2251,15 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 <span style={modeTitle}>Power Play</span>
                 <span
                   style={{
-                    display: "inline-block",
-                    background: "rgba(255,255,255,0.2)",
-                    padding: "4px 10px",
-                    borderRadius: "12px",
-                    font: "500 9px 'Outfit', sans-serif",
+                    display: "block",
+                    background: "rgba(255,255,255,0.25)",
+                    padding: "8px 14px",
+                    borderRadius: "16px",
+                    font: "600 11px 'Outfit', sans-serif",
                     letterSpacing: "0.5px",
-                    opacity: 0.9,
-                    marginTop: 4,
+                    opacity: 0.95,
+                    marginTop: 8,
+                    textAlign: "center",
                   }}
                 >
                   60 seconds
@@ -2296,7 +2272,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
 
         {/* ===== MULTIPLAYER ===== */}
         {st.view === "multi" && (
-          <div style={panelStyle(640)}>
+          <div style={{ ...panelStyle(640), animation: "qe-menu-fade-in 0.5s ease-out" }}>
             {smallHeader("Multiplayer", goHome)}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14 }}>
               <button className="qhov" onClick={goCreate} style={multiCard("#1040C0", "#fff")}>
@@ -3116,9 +3092,10 @@ const powerPlayDiagram = () => (
       width: "100%",
       display: "flex",
       gap: 10,
-      padding: "8px 0",
+      padding: "12px 0 32px 0",
       justifyContent: "space-around",
-      alignItems: "center",
+      alignItems: "flex-start",
+      minHeight: 100,
     }}
   >
     {[
@@ -3156,17 +3133,63 @@ const powerPlayDiagram = () => (
         key={i}
         style={{
           textAlign: "center",
-          animation: "qe-power-pulse 1.8s ease-in-out infinite",
-          animationDelay: `${i * 200}ms`,
+          position: "relative",
+          width: 60,
+          height: 60,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        <div style={{ marginBottom: 4 }}>{power.icon}</div>
         <div
           style={{
+            position: "absolute",
+            width: 60,
+            height: 60,
+            animation: "qe-power-pulse 1.8s ease-in-out infinite",
+            animationDelay: `${i * 200}ms`,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2,
+          }}
+        >
+          <div style={{ marginBottom: 4 }}>{power.icon}</div>
+        </div>
+        {[...Array(4)].map((_, j) => {
+          const angle = (j * 90) * (Math.PI / 180);
+          const distance = 28;
+          const px = Math.cos(angle) * distance;
+          const py = Math.sin(angle) * distance;
+          return (
+            <div
+              key={j}
+              style={{
+                position: "absolute",
+                width: 8,
+                height: 8,
+                borderRadius: "2px",
+                background: power.color,
+                opacity: 0.3,
+                animation: `qe-powerup-burst 1.2s ease-out infinite`,
+                animationDelay: `${i * 200 + j * 150}ms`,
+                "--px": `${px}px`,
+                "--py": `${py}px`,
+              } as any}
+            />
+          );
+        })}
+        <div
+          style={{
+            position: "absolute",
+            bottom: -16,
             font: "700 9px 'Outfit',sans-serif",
             opacity: 0.8,
             textTransform: "uppercase",
             letterSpacing: "0.5px",
+            zIndex: 1,
           }}
         >
           {power.label}
