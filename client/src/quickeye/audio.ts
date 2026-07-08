@@ -10,6 +10,7 @@ export class QuickeyeAudio {
   /** When false, all playback is suppressed. */
   enabled = true;
   private bgm: HTMLAudioElement | null = null;
+  private audioCache = new Map<string, HTMLAudioElement>();
 
   /** Create/resume the AudioContext. Call from a user gesture (e.g. game start). */
   ensure(): void {
@@ -276,5 +277,52 @@ export class QuickeyeAudio {
       o.start(t);
       o.stop(t + 0.4);
     });
+  }
+
+  /** Play an external audio file. Caches for repeated use. */
+  playFile(src: string, volume: number = 0.5): void {
+    if (!this.enabled) return;
+    try {
+      let audio = this.audioCache.get(src);
+      if (!audio) {
+        audio = new Audio();
+        audio.src = src;
+        audio.volume = Math.max(0, Math.min(1, volume));
+        this.audioCache.set(src, audio);
+      } else {
+        audio.currentTime = 0;
+        audio.volume = Math.max(0, Math.min(1, volume));
+      }
+      const playPromise = audio.play();
+      if (playPromise) {
+        playPromise.catch(() => {
+          /* audio unavailable or blocked */
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** Play a punch sound effect (randomly picks from available punch sounds). */
+  punch(): void {
+    const punchSounds = [
+      "/audio/punch-1.mp3",
+      "/audio/punch-2.mp3",
+      "/audio/punch-3.mp3",
+      "/audio/punch-4.mp3",
+    ];
+    const chosen = punchSounds[Math.floor(Math.random() * punchSounds.length)];
+    this.playFile(chosen, 0.6);
+  }
+
+  /** Play a scream/angry sound. */
+  scream(): void {
+    this.playFile("/audio/scream.mp3", 0.7);
+  }
+
+  /** Play a censor beep sound. */
+  censorBeep(): void {
+    this.playFile("/audio/censor-beep.mp3", 0.6);
   }
 }

@@ -48,7 +48,6 @@ type View =
   | "home"
   | "solo"
   | "multi"
-  | "browse"
   | "create"
   | "join"
   | "leaderboard"
@@ -90,11 +89,10 @@ interface QState {
   gameId: string | null;
   playerId: string | null;
   serverError: string | null;
-  browseCodes: { gameId: string; host: string; playerCount: number }[];
   quitConfirm: boolean;
   mousePos: [number, number];
   eyePokes: number;
-  eyeExpression: "normal" | "ouch" | "annoyed" | "angry" | "furious" | "middle-finger";
+  eyeExpression: "normal" | "ouch" | "annoyed" | "angry" | "furious" | "middle-finger" | "laughing";
   countdownActive: boolean;
   countdownNumber: 3 | 2 | 1 | null;
   countdownPhase: "idle" | "counting" | "go" | "complete";
@@ -167,7 +165,6 @@ function initialState(): QState {
     gameId: null,
     playerId: null,
     serverError: null,
-    browseCodes: [], // Games fetched from server
     quitConfirm: false,
     mousePos: [0, 0],
     eyePokes: 0,
@@ -224,6 +221,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   const hdrRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overRef = useRef<HTMLCanvasElement | null>(null);
+  const eyeRef = useRef<HTMLDivElement | null>(null);
 
   // audio
   const audioRef = useRef<QuickeyeAudio>();
@@ -659,25 +657,47 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   const pokeEye = () => {
     const newPokes = stateRef.current.eyePokes + 1;
     let expression: QState["eyeExpression"] = "normal";
-    if (newPokes === 1) {
-      audioRef.current?.menuClick();
+
+    if (newPokes <= 2) {
+      audioRef.current?.punch();
       expression = "ouch";
-    } else if (newPokes === 2) {
-      audioRef.current?.errorSound();
+    } else if (newPokes <= 4) {
+      audioRef.current?.punch();
       expression = "annoyed";
-    } else if (newPokes === 3) {
-      audioRef.current?.errorSound();
+    } else if (newPokes <= 7) {
+      audioRef.current?.punch();
       expression = "angry";
-    } else if (newPokes === 4) {
-      audioRef.current?.errorSound();
+    } else if (newPokes <= 10) {
+      audioRef.current?.punch();
       expression = "furious";
-    } else if (newPokes >= 5) {
-      audioRef.current?.chunk(1);
+    } else if (newPokes >= 11) {
+      audioRef.current?.scream();
       expression = "middle-finger";
     }
+
     patch({ eyePokes: newPokes, eyeExpression: expression });
     clearTimeout(saveTORef.current);
-    saveTORef.current = window.setTimeout(() => patch({ eyePokes: 0, eyeExpression: "normal" }), 2800);
+
+    // Timeline for the easter egg sequence (triggers at 11 pokes)
+    if (newPokes >= 11) {
+      // Censor beep at ~400ms
+      saveTORef.current = window.setTimeout(() => {
+        audioRef.current?.censorBeep();
+      }, 400);
+
+      // Laugh emoji at ~800ms
+      saveTORef.current = window.setTimeout(() => {
+        patch({ eyeExpression: "laughing" });
+      }, 800);
+
+      // Reset to normal after 2s
+      saveTORef.current = window.setTimeout(() => {
+        patch({ eyePokes: 0, eyeExpression: "normal" });
+      }, 2000);
+    } else {
+      // Reset to normal after 3.5s for regular pokes
+      saveTORef.current = window.setTimeout(() => patch({ eyePokes: 0, eyeExpression: "normal" }), 3500);
+    }
   };
   const goSolo = () => {
     audioRef.current?.navigate();
@@ -686,11 +706,6 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   const goMulti = () => {
     audioRef.current?.navigate();
     patch({ view: "multi" });
-  };
-  const goBrowse = () => {
-    audioRef.current?.navigate();
-    patch({ view: "browse" });
-    props.onQueryGames?.();
   };
   const goCreate = () => {
     audioRef.current?.navigate();
@@ -1087,7 +1102,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
         isMultiplayer: true,
         gameId: gs.gameId,
         playerId: gs.playerId,
-        view: s.view === "join" || s.view === "browse" ? "lobby" : s.view,
+        view: s.view === "join" ? "lobby" : s.view,
       }));
     }
     if (props.matchResult) {
@@ -1126,6 +1141,8 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   ) => {
     const expr = st.eyeExpression;
     const isMiddleFinger = expr === "middle-finger";
+    const isLaughing = expr === "laughing";
+    const isShaking = expr === "annoyed" || expr === "angry" || expr === "furious";
 
     if (isMiddleFinger) {
       return (
@@ -1138,11 +1155,31 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             justifyContent: "center",
             fontSize: discSize * 0.8,
             cursor: interactive ? "pointer" : "default",
-            animation: expr === "furious" ? "qe-shake 0.2s ease-in-out" : undefined,
+            animation: "qe-shake 0.15s ease-in-out infinite",
           }}
           onClick={interactive ? pokeEye : undefined}
         >
           🖕
+        </div>
+      );
+    }
+
+    if (isLaughing) {
+      return (
+        <div
+          style={{
+            width: discSize,
+            height: discSize,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: discSize * 0.8,
+            cursor: interactive ? "pointer" : "default",
+            animation: "qe-bounce 0.4s ease-in-out",
+          }}
+          onClick={interactive ? pokeEye : undefined}
+        >
+          😂
         </div>
       );
     }
@@ -1153,12 +1190,25 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     let eyeLidTop = 0;
 
     if (tracking && withPupil) {
-      const maxOffset = (discSize - irisSize) / 2 * 0.6;
-      const dx = st.mousePos[0] - (discSize / 2);
-      const dy = st.mousePos[1] - (discSize / 2);
-      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      const angle = Math.atan2(dy, dx);
-      irisOffset = [Math.cos(angle) * maxOffset, Math.sin(angle) * maxOffset];
+      // Track mouse movement - get all .qlogo elements
+      const logoElements = document.querySelectorAll(".qlogo");
+      if (logoElements.length > 0) {
+        // Use the first logo element (home screen logo)
+        const rect = logoElements[0].getBoundingClientRect();
+        // The eye is rendered inside the logo; estimate position
+        const eyeCenterX = rect.left + discSize / 2;
+        const eyeCenterY = rect.top + discSize / 2;
+        const dx = st.mousePos[0] - eyeCenterX;
+        const dy = st.mousePos[1] - eyeCenterY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // Only track if mouse is within the viewport and reasonably close
+        if (dist > 0 && st.mousePos[0] > 0 && st.mousePos[1] > 0 && rect.right > 0 && rect.bottom > 0) {
+          const maxOffset = irisSize * 0.3;
+          const angle = Math.atan2(dy, dx);
+          irisOffset = [Math.cos(angle) * maxOffset, Math.sin(angle) * maxOffset];
+        }
+      }
     }
 
     if (expr === "ouch") {
@@ -1168,6 +1218,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     } else if (expr === "annoyed") {
       eyeLidTop = -5;
       pupilScale = 0.3;
+      irisScale = 0.85;
     } else if (expr === "angry") {
       eyeLidTop = -8;
       pupilScale = 0.2;
@@ -1185,6 +1236,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
           width: discSize,
           height: discSize,
           cursor: interactive ? "pointer" : "default",
+          animation: isShaking ? "qe-shake 0.08s ease-in-out infinite" : undefined,
         }}
         onClick={interactive ? pokeEye : undefined}
       >
@@ -1271,7 +1323,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
           onClick={goHome}
           style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
         >
-          {logoMark(34, 14, [14, 5], false)}
+          {logoMark(34, 14, [14, 5], false, true)}
           <div
             style={{
               font: "900 22px 'Outfit',sans-serif",
@@ -1350,76 +1402,6 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
         </button>
       </div>
     );
-  };
-
-  const browseList = () => {
-    const games = props.availableGames || [];
-    if (games.length === 0) {
-      return (
-        <div
-          style={{
-            textAlign: "center",
-            color: "#666",
-            font: "600 1rem 'Outfit',sans-serif",
-            padding: "2rem",
-          }}
-        >
-          No games available. Create one or check back later.
-        </div>
-      );
-    }
-    const joinBrowseGame = (gameId: string) => {
-      audioRef.current?.menuClick();
-      props.onJoinMultiplayer?.(gameId, stateRef.current.playerName || "You");
-    };
-    return games.map((game, i) => (
-      <button
-        key={i}
-        className="qhov"
-        onClick={() => joinBrowseGame(game.gameId)}
-        style={{
-          background: "#fff",
-          border: "4px solid #000",
-          padding: "1rem",
-          cursor: "pointer",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          boxShadow: "4px 4px 0 0 #000",
-          textAlign: "left",
-        }}
-      >
-        <span
-          style={{
-            font: "900 1.4rem 'Outfit',sans-serif",
-            color: "#1040C0",
-            minWidth: 70,
-            letterSpacing: "2px",
-          }}
-        >
-          {game.gameId}
-        </span>
-        <span
-          style={{
-            flex: 1,
-            margin: "0 14px",
-            font: "600 0.9rem 'Outfit',sans-serif",
-            color: "#121212",
-          }}
-        >
-          Host: {game.host} · {game.playerCount} player{game.playerCount > 1 ? "s" : ""}
-        </span>
-        <span
-          style={{
-            color: "#D02020",
-            font: "700 0.85rem 'Outfit',sans-serif",
-            textTransform: "uppercase",
-          }}
-        >
-          Join →
-        </span>
-      </button>
-    ));
   };
 
   const globalBoard = () => {
@@ -1989,24 +1971,37 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 onClick={goHome}
                 style={{
                   position: "absolute",
-                  left: 30,
-                  bottom: 14,
+                  left: "50%",
+                  bottom: 20,
+                  transform: "translateX(-50%)",
                   display: "flex",
+                  flexDirection: "column",
                   alignItems: "center",
-                  gap: 8,
+                  gap: 12,
                   cursor: "pointer",
                 }}
               >
-                {logoMark(100, 40, [40, 13], true, true, true)}
                 <div
                   style={{
-                    font: "900 48px/1 'Outfit',sans-serif",
-                    textTransform: "uppercase",
-                    letterSpacing: "-2px",
-                    color: "#fff",
+                    position: "relative",
+                    zIndex: 2,
                   }}
                 >
-                  uickeye
+                  {logoMark(80, 32, [32, 10], true, true, true)}
+                </div>
+                <div
+                  style={{
+                    font: "900 40px/1 'Outfit',sans-serif",
+                    textTransform: "uppercase",
+                    letterSpacing: "3px",
+                    color: "#fff",
+                    textShadow: `0 0 20px ${iris}, 0 0 40px ${iris}40, 0 0 60px ${iris}20`,
+                    animation: "qe-glow 2s ease-in-out infinite",
+                    position: "relative",
+                    zIndex: 1,
+                  }}
+                >
+                  Quickeye
                 </div>
               </div>
             </div>
@@ -2167,22 +2162,22 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               <button className="qhov" onClick={startMarathon} style={modeCard("#D02020", "#fff")}>
                 {marathonDiagram()}
                 <span style={modeTitle}>Marathon</span>
-                <span style={modeSub}>60 seconds</span>
-                <span style={{ ...modeDesc, opacity: 0.9 }}>Rack up as many matches as you can</span>
+                <span style={modeSub}>60 SECONDS</span>
+                <span style={{ ...modeDesc, opacity: 0.9 }}>Score as many matches as you can</span>
               </button>
               <button className="qhov" onClick={startRace} style={modeCard("#F0C020", "#121212")}>
                 {raceDiagram()}
                 <span style={modeTitle}>Race the Clock</span>
-                <span style={modeSub}>First to 7</span>
-                <span style={{ ...modeDesc, opacity: 0.75 }}>
-                  Hit 7 matches as fast as you can
+                <span style={modeSub}>FIRST TO 7</span>
+                <span style={{ ...modeDesc, opacity: 0.9 }}>
+                  Race to 7 matches as fast as you can
                 </span>
               </button>
               <button className="qhov" onClick={startPower} style={modeCard("#1040C0", "#fff")}>
                 {powerPlayDiagram()}
                 <span style={modeTitle}>Power Play</span>
-                <span style={modeSub}>60 seconds</span>
-                <span style={{ ...modeDesc, opacity: 0.9 }}>Use power-ups to win fast</span>
+                <span style={modeSub}>60 SECONDS</span>
+                <span style={{ ...modeDesc, opacity: 0.9 }}>Reveal hidden matches, cull cards, or pop them all</span>
               </button>
             </div>
           </div>
@@ -2192,17 +2187,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
         {st.view === "multi" && (
           <div style={panelStyle(640)}>
             {smallHeader("Multiplayer", goHome)}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>
-              <button className="qhov" onClick={goBrowse} style={multiCard("#D02020", "#fff")}>
-                <span
-                  style={{ width: 30, height: 30, borderRadius: "50%", border: "5px solid #fff", boxSizing: "border-box" }}
-                />
-                <span style={multiLabel}>
-                  Browse
-                  <br />
-                  Games
-                </span>
-              </button>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14 }}>
               <button className="qhov" onClick={goCreate} style={multiCard("#1040C0", "#fff")}>
                 <span style={{ width: 30, height: 30, background: "#fff" }} />
                 <span style={multiLabel}>
@@ -2258,33 +2243,6 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               {st.leaderTab === "race" ? "Fastest time to 7" : "Best round score"}
             </div>
             {globalBoard()}
-          </div>
-        )}
-
-        {/* ===== BROWSE ===== */}
-        {st.view === "browse" && (
-          <div style={panelStyle(560)}>
-            {smallHeader("Available Games", goMulti)}
-            <button
-              className="qhov"
-              onClick={() => {
-                audioRef.current?.menuClick();
-                props.onQueryGames?.();
-              }}
-              style={{
-                background: "#121212",
-                color: "#fff",
-                border: "3px solid #121212",
-                padding: "0.5rem 1rem",
-                font: "600 0.9rem 'Outfit',sans-serif",
-                cursor: "pointer",
-                marginBottom: 12,
-                width: "fit-content",
-              }}
-            >
-              ↻ Refresh Games
-            </button>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 300, overflowY: "auto" }}>{browseList()}</div>
           </div>
         )}
 
@@ -3094,12 +3052,18 @@ function modeCard(bg: string, color: string): CSSProperties {
   };
 }
 const modeTitle: CSSProperties = {
-  font: "900 1.2rem 'Outfit',sans-serif",
+  font: "900 1.3rem 'Outfit',sans-serif",
   textTransform: "uppercase",
-  letterSpacing: "-0.5px",
+  letterSpacing: "0px",
+  marginTop: 8,
 };
-const modeSub: CSSProperties = { marginTop: 6, font: "900 1rem 'Outfit',sans-serif", letterSpacing: "-0.3px" };
-const modeDesc: CSSProperties = { font: "500 12.5px/1.4 'Outfit',sans-serif" };
+const modeSub: CSSProperties = {
+  marginTop: 4,
+  font: "700 0.8rem 'Courier New', monospace",
+  letterSpacing: "2px",
+  opacity: 0.85,
+};
+const modeDesc: CSSProperties = { font: "500 12px/1.5 'Outfit',sans-serif", marginTop: 8 };
 function multiCard(bg: string, color: string): CSSProperties {
   return {
     display: "flex",

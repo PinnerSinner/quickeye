@@ -37,10 +37,19 @@
 
 /* springy hover for primary buttons/cards */
 .qhov {
+  position: relative;
   transition: transform 0.16s cubic-bezier(0.34, 1.7, 0.45, 1), box-shadow 0.16s ease;
 }
 .qhov:hover {
   transform: translate(-3px, -4px) rotate(-1.4deg) scale(1.045);
+}
+.qhov:hover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3), transparent 60%);
+  animation: qe-sparkle 0.4s ease-out forwards;
 }
 .qhov:active {
   transform: translate(1px, 2px) scale(0.98);
@@ -242,5 +251,42 @@
   50% {
     opacity: 1;
     transform: scale(1.15);
+  }
+}
+@keyframes qe-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 20px rgba(255,0,255,0.6), 0 0 40px rgba(0,255,255,0.3), 0 0 60px rgba(255,0,255,0.2);
+  }
+  50% {
+    text-shadow: 0 0 30px rgba(255,0,255,0.8), 0 0 60px rgba(0,255,255,0.5), 0 0 90px rgba(255,0,255,0.4);
+  }
+}
+@keyframes qe-bounce {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2) rotate(8deg);
+  }
+}
+@keyframes qe-particle-burst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--px), var(--py)) scale(0.3);
+  }
+}
+@keyframes qe-sparkle {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
   }
 }
