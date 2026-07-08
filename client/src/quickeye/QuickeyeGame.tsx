@@ -2149,13 +2149,14 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 style={{
                   position: "absolute",
                   left: "50%",
-                  bottom: 20,
+                  top: 210,
                   transform: "translateX(-50%)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   gap: 12,
                   cursor: "pointer",
+                  zIndex: 20,
                 }}
               >
                 <div
