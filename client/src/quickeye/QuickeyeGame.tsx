@@ -2109,7 +2109,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             <div style={{ position: "relative" }}>
               <div
                 ref={hdrRef}
-                style={{ height: 210, background: "#000", overflow: "visible", cursor: "crosshair", position: "relative" }}
+                style={{ height: 210, background: "#000", overflow: "hidden", cursor: "crosshair", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
               >
                 {[...Array(6)].map((_, i) => (
                   <div
@@ -2124,6 +2124,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                       top: `${Math.random() * 100}%`,
                       opacity: Math.random() * 0.3 + 0.1,
                       animation: `qe-float${i % 3} ${8 + Math.random() * 6}s ease-in-out infinite`,
+                      zIndex: 1,
                     }}
                   />
                 ))}
@@ -2131,12 +2132,9 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                   className="qlogo"
                   onClick={pokeEye}
                   style={{
-                    position: "absolute",
-                    top: "50%",
-                    left: "50%",
-                    transform: "translate(-50%, -50%)",
+                    position: "relative",
                     cursor: "pointer",
-                    zIndex: 20,
+                    zIndex: 10,
                   }}
                 >
                   {logoMark(140, 56, [56, 16], true, true, true)}
