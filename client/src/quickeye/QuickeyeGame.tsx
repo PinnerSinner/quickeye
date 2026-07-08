@@ -651,21 +651,30 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   };
   const pokeEye = () => {
     const newPokes = stateRef.current.eyePokes + 1;
+    const prevPokes = stateRef.current.eyePokes;
     let expression: QState["eyeExpression"] = "normal";
 
-    if (newPokes <= 3) {
+    if (newPokes <= 5) {
       audioRef.current?.punch();
       expression = "ouch";
-    } else if (newPokes <= 6) {
+    } else if (newPokes <= 12) {
       audioRef.current?.punch();
       expression = "annoyed";
-    } else if (newPokes <= 10) {
+    } else if (newPokes <= 22) {
       audioRef.current?.punch();
       expression = "angry";
-    } else if (newPokes <= 14) {
+      // Trigger frustrated grunts on entry to angry phase
+      if (prevPokes < 13) {
+        audioRef.current?.playFile("/audio/frustrated-grunts.mp3", 0.6);
+      }
+    } else if (newPokes <= 35) {
       audioRef.current?.punch();
       expression = "furious";
-    } else if (newPokes >= 15) {
+    } else if (newPokes >= 36) {
+      // Stop frustrated grunts if still playing
+      audioRef.current?.stop("/audio/frustrated-grunts.mp3");
+      // Play swear bleep and scream simultaneously
+      audioRef.current?.censorBeep();
       audioRef.current?.scream();
       expression = "middle-finger";
     }
@@ -673,22 +682,23 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     patch({ eyePokes: newPokes, eyeExpression: expression });
     clearTimeout(saveTORef.current);
 
-    // Timeline for the easter egg sequence (triggers at 11 pokes)
-    if (newPokes >= 11) {
-      // Censor beep at ~400ms
+    // Timeline for the easter egg sequence (middle finger triggers at 36 pokes)
+    if (newPokes >= 36) {
+      // Middle finger stays up for 3.2s (duration of audio)
       saveTORef.current = window.setTimeout(() => {
-        audioRef.current?.censorBeep();
-      }, 400);
+        // Eye looks around (recovery animation) for 1.3s
+        patch({ eyePokes: newPokes, eyeExpression: "normal" });
+      }, 3200);
 
-      // Reset to normal after 2s
+      // Gentle cough sound plays 1.3s after sounds end (4.5s total)
+      saveTORef.current = window.setTimeout(() => {
+        audioRef.current?.playFile("/audio/ahem.mp3", 0.5);
+      }, 4500);
+
+      // Full reset after 5.2s
       saveTORef.current = window.setTimeout(() => {
         patch({ eyePokes: 0, eyeExpression: "normal" });
-      }, 2000);
-
-      // Ahem sound 2.5s after middle finger (1.5s after returning to normal)
-      saveTORef.current = window.setTimeout(() => {
-        audioRef.current?.playFile("/audio/ahem.mp3", 0.7);
-      }, 3500);
+      }, 5200);
     } else {
       // Reset to normal after 3.5s for regular pokes
       saveTORef.current = window.setTimeout(() => patch({ eyePokes: 0, eyeExpression: "normal" }), 3500);
@@ -1363,7 +1373,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             width: discSize,
             height: discSize,
             borderRadius: "50%",
-            background: "#fff",
+            background: expr === "furious" ? "linear-gradient(135deg, #fff 0%, #fff 70%, #ffcccc 100%)" : "#fff",
             border: `${Math.max(3, Math.round(discSize * 0.1))}px solid #000`,
             boxSizing: "border-box",
             display: "flex",
@@ -1373,6 +1383,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             position: "relative",
             color: iris,
             animation: `qe-blink 3.4s ease-in-out infinite, qe-eye-glow 1.8s ease-in-out infinite`,
+            transition: expr === "furious" ? "background 300ms ease" : undefined,
           }}
         >
           {eyeLidTop !== 0 && (
@@ -2169,7 +2180,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 </div>
                 <div
                   style={{
-                    font: "900 48px/0.9 Impact, 'Arial Black', sans-serif",
+                    font: "900 56px/0.9 Impact, 'Arial Black', sans-serif",
                     textTransform: "uppercase",
                     letterSpacing: "-2px",
                     color: "#fff",
