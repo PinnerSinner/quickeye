@@ -653,19 +653,19 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     const newPokes = stateRef.current.eyePokes + 1;
     let expression: QState["eyeExpression"] = "normal";
 
-    if (newPokes <= 2) {
+    if (newPokes <= 3) {
       audioRef.current?.punch();
       expression = "ouch";
-    } else if (newPokes <= 4) {
+    } else if (newPokes <= 6) {
       audioRef.current?.punch();
       expression = "annoyed";
-    } else if (newPokes <= 7) {
-      audioRef.current?.punch();
-      expression = "angry";
     } else if (newPokes <= 10) {
       audioRef.current?.punch();
+      expression = "angry";
+    } else if (newPokes <= 14) {
+      audioRef.current?.punch();
       expression = "furious";
-    } else if (newPokes >= 11) {
+    } else if (newPokes >= 15) {
       audioRef.current?.scream();
       expression = "middle-finger";
     }
@@ -2777,7 +2777,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                         position: "relative",
                       }}
                     >
-                      {st.countdownActive && dimStyle(st.tutorialStep >= 0)}
+                      {st.countdownActive && <div style={dimStyle(st.tutorialStep >= 0)} />}
                       <div style={cardHeader(boardColor, "#fff")}>Match Board</div>
                       <div style={{ padding: 20, overflow: "hidden" }}>
                         {centerGrid(d)}
@@ -2829,7 +2829,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                         position: "relative",
                       }}
                     >
-                      {st.countdownActive && dimStyle(st.tutorialStep >= 1)}
+                      {st.countdownActive && <div style={dimStyle(st.tutorialStep >= 1)} />}
                       <div style={cardHeader(pc, textOn(pc))}>
                         {(st.playerName || "You") + " · tap to match"}
                       </div>
