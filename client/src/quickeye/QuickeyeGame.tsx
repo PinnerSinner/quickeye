@@ -1254,6 +1254,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             animation: "qe-blink 3.4s ease-in-out infinite",
             overflow: "hidden",
             position: "relative",
+            boxShadow: `inset 0 0 20px ${iris}40, 0 0 15px ${iris}30`,
           }}
         >
           {eyeLidTop !== 0 && (
@@ -1282,6 +1283,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               alignItems: "center",
               justifyContent: "center",
               transform: tracking ? `translate(${irisOffset[0]}px, ${irisOffset[1]}px)` : undefined,
+              animation: "qe-iris-glow 1.8s ease-in-out infinite",
             }}
           >
             {withPupil && (
@@ -1964,8 +1966,25 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             <div style={{ position: "relative" }}>
               <div
                 ref={hdrRef}
-                style={{ height: 210, background: "#000", overflow: "hidden", cursor: "crosshair" }}
-              />
+                style={{ height: 210, background: "#000", overflow: "hidden", cursor: "crosshair", position: "relative" }}
+              >
+                {[...Array(6)].map((_, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      position: "absolute",
+                      width: Math.random() * 80 + 20,
+                      height: Math.random() * 80 + 20,
+                      borderRadius: "50%",
+                      border: `2px solid ${iris}20`,
+                      left: `${Math.random() * 100}%`,
+                      top: `${Math.random() * 100}%`,
+                      opacity: Math.random() * 0.3 + 0.1,
+                      animation: `qe-float${i % 3} ${8 + Math.random() * 6}s ease-in-out infinite`,
+                    }}
+                  />
+                ))}
+              </div>
               <div
                 className="qlogo"
                 onClick={goHome}
@@ -1987,13 +2006,13 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                     zIndex: 2,
                   }}
                 >
-                  {logoMark(80, 32, [32, 10], true, true, true)}
+                  {logoMark(100, 40, [40, 12], true, true, true)}
                 </div>
                 <div
                   style={{
-                    font: "900 40px/1 'Outfit',sans-serif",
+                    font: "900 32px/1 'Outfit',sans-serif",
                     textTransform: "uppercase",
-                    letterSpacing: "3px",
+                    letterSpacing: "1px",
                     color: "#fff",
                     textShadow: `0 0 20px ${iris}, 0 0 40px ${iris}40, 0 0 60px ${iris}20`,
                     animation: "qe-glow 2s ease-in-out infinite",
@@ -2121,6 +2140,29 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 </button>
               </div>
             </div>
+            <div
+              style={{
+                padding: "0 30px 12px",
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
+              <a
+                href="https://github.com/mballalbarran/quickeye"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  font: "500 10px 'Outfit',sans-serif",
+                  color: "#666",
+                  textDecoration: "none",
+                  transition: "color 200ms",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#999")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#666")}
+              >
+                Made with GitHub
+              </a>
+            </div>
           </div>
         )}
 
@@ -2162,13 +2204,17 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               <button className="qhov" onClick={startMarathon} style={modeCard("#D02020", "#fff")}>
                 {marathonDiagram()}
                 <span style={modeTitle}>Marathon</span>
-                <span style={modeSub}>60 SECONDS</span>
+                <span style={{ ...modeSub, font: "500 10px 'Outfit', sans-serif", letterSpacing: "0px", opacity: 0.75 }}>
+                  60 seconds
+                </span>
                 <span style={{ ...modeDesc, opacity: 0.9 }}>Score as many matches as you can</span>
               </button>
               <button className="qhov" onClick={startRace} style={modeCard("#F0C020", "#121212")}>
                 {raceDiagram()}
                 <span style={modeTitle}>Race the Clock</span>
-                <span style={modeSub}>FIRST TO 7</span>
+                <span style={{ ...modeSub, font: "900 13px 'Outfit', sans-serif", letterSpacing: "1px" }}>
+                  FIRST TO 7
+                </span>
                 <span style={{ ...modeDesc, opacity: 0.9 }}>
                   Race to 7 matches as fast as you can
                 </span>
@@ -2176,7 +2222,9 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               <button className="qhov" onClick={startPower} style={modeCard("#1040C0", "#fff")}>
                 {powerPlayDiagram()}
                 <span style={modeTitle}>Power Play</span>
-                <span style={modeSub}>60 SECONDS</span>
+                <span style={{ ...modeSub, font: "500 10px 'Outfit', sans-serif", letterSpacing: "0px", opacity: 0.75 }}>
+                  60 seconds
+                </span>
                 <span style={{ ...modeDesc, opacity: 0.9 }}>Reveal hidden matches, cull cards, or pop them all</span>
               </button>
             </div>
@@ -2540,13 +2588,46 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                       gap: 22,
                       alignItems: "start",
                       marginBottom: 22,
+                      opacity:
+                        st.countdownActive && st.countdownPhase === "counting"
+                          ? st.countdownNumber === 1
+                            ? 1
+                            : 0.4
+                          : 1,
+                      transition: "opacity 500ms ease-out",
                     }}
                   >
-                    <div style={{ border: "4px solid #000", background: "#fff", boxShadow: "6px 6px 0 0 #000" }}>
+                    <div
+                      style={{
+                        border: "4px solid #000",
+                        background: "#fff",
+                        boxShadow: "6px 6px 0 0 #000",
+                        opacity:
+                          st.countdownActive && st.countdownPhase === "counting"
+                            ? st.countdownNumber <= 3
+                              ? 1
+                              : 0.3
+                            : 1,
+                        transition: "opacity 500ms ease-out",
+                      }}
+                    >
                       <div style={cardHeader(boardColor, "#fff")}>Match Board</div>
                       <div style={{ padding: 20, overflow: "hidden" }}>{centerGrid(d)}</div>
                     </div>
-                    <div style={{ border: "4px solid #000", background: "#fff", boxShadow: "6px 6px 0 0 #000" }}>
+                    <div
+                      style={{
+                        border: "4px solid #000",
+                        background: "#fff",
+                        boxShadow: "6px 6px 0 0 #000",
+                        opacity:
+                          st.countdownActive && st.countdownPhase === "counting"
+                            ? st.countdownNumber <= 2
+                              ? 1
+                              : 0.3
+                            : 1,
+                        transition: "opacity 500ms ease-out",
+                      }}
+                    >
                       <div style={cardHeader(pc, textOn(pc))}>
                         {(st.playerName || "You") + " · tap to match"}
                       </div>
@@ -2661,42 +2742,20 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               pointerEvents: st.countdownPhase === "complete" ? "none" : "auto",
             }}
           >
-            {/* Tutorial spotlight overlay - dims everything except spotlit area */}
-            {(st.countdownNumber === 3 || st.countdownNumber === 2 || st.countdownNumber === 1) && (
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background:
-                    st.countdownNumber === 3
-                      ? "radial-gradient(ellipse 280px 220px at 50% 35%, transparent 0%, rgba(0,0,0,0.8) 100%)"
-                      : st.countdownNumber === 2
-                      ? "radial-gradient(ellipse 280px 220px at 50% 65%, transparent 0%, rgba(0,0,0,0.8) 100%)"
-                      : "radial-gradient(ellipse 350px 260px at 50% 50%, transparent 0%, rgba(0,0,0,0.8) 100%)",
-                  transition: "background 800ms ease-out",
-                  zIndex: 5,
-                  pointerEvents: "none",
-                }}
-              />
-            )}
 
-            {/* Background dimming */}
+            {/* Background dimming - full dim during countdown, fades on GO */}
             <div
               style={{
                 position: "absolute",
                 inset: 0,
-                background: "rgba(0, 0, 0, 0.5)",
+                background: "rgba(0, 0, 0, 0.7)",
                 opacity:
                   st.countdownPhase === "go"
                     ? 0
-                    : st.countdownNumber === 3
-                    ? 0.4
-                    : st.countdownNumber === 2
-                    ? 0.35
-                    : st.countdownNumber === 1
-                    ? 0.25
-                    : 0.5,
-                transition: "opacity 600ms ease-out",
+                    : st.countdownPhase === "counting"
+                    ? 0.7
+                    : 0,
+                transition: "opacity 400ms ease-out",
                 zIndex: 3,
                 pointerEvents: "none",
               }}

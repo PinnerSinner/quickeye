@@ -69,7 +69,7 @@
   transition: transform 0.18s cubic-bezier(0.34, 1.7, 0.45, 1);
 }
 .qlogo:hover {
-  transform: scale(1.06) rotate(-2deg);
+  transform: scale(1.06) rotate(-8deg);
 }
 
 @keyframes qe-blink {
@@ -288,5 +288,56 @@
   }
   50% {
     opacity: 1;
+  }
+}
+@keyframes qe-iris-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 12px currentColor, 0 0 24px currentColor;
+  }
+  50% {
+    box-shadow: 0 0 20px currentColor, 0 0 36px currentColor;
+  }
+}
+@keyframes qe-float0 {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(-30px) translateX(15px);
+  }
+  50% {
+    transform: translateY(-60px) translateX(-10px);
+  }
+  75% {
+    transform: translateY(-30px) translateX(-20px);
+  }
+}
+@keyframes qe-float1 {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(-40px) translateX(-20px);
+  }
+  50% {
+    transform: translateY(-70px) translateX(10px);
+  }
+  75% {
+    transform: translateY(-40px) translateX(25px);
+  }
+}
+@keyframes qe-float2 {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(-35px) translateX(25px);
+  }
+  50% {
+    transform: translateY(-65px) translateX(-15px);
+  }
+  75% {
+    transform: translateY(-35px) translateX(-25px);
   }
 }
