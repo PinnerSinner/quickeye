@@ -684,6 +684,11 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
       saveTORef.current = window.setTimeout(() => {
         patch({ eyePokes: 0, eyeExpression: "normal" });
       }, 2000);
+
+      // Ahem sound 2.5s after middle finger (1.5s after returning to normal)
+      saveTORef.current = window.setTimeout(() => {
+        audioRef.current?.playFile("/audio/ahem.mp3", 0.7);
+      }, 3500);
     } else {
       // Reset to normal after 3.5s for regular pokes
       saveTORef.current = window.setTimeout(() => patch({ eyePokes: 0, eyeExpression: "normal" }), 3500);
@@ -1999,58 +2004,36 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
 
   const powerHud = () => {
     const pu = st.powerups;
-    const defs: [PowerType, string, string, string][] = [
-      ["pop", "1", "Pop", "#1040C0"],
-      ["reveal", "2", "Reveal", "#22C55E"],
-      ["halve", "3", "Halve", "#F0C020"],
-    ];
+    const colors = ["#1040C0", "#22C55E", "#F0C020"];
+    const keys = ["1", "2", "3"];
     return (
       <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
-        {defs.map(([key, num, label, col]) => {
-          const avail = pu[key];
+        {[0, 1, 2].map((i) => {
+          const avail = Object.values(pu)[i];
+          const col = colors[i];
           return (
             <button
-              key={key}
-              onClick={() => usePower(key)}
+              key={keys[i]}
+              onClick={() => usePower(["pop", "reveal", "halve"][i] as PowerType)}
               disabled={!avail}
               style={{
                 flex: 1,
                 display: "flex",
                 alignItems: "center",
-                gap: 10,
-                padding: "9px 12px",
+                justifyContent: "center",
+                padding: "12px",
                 border: "3px solid #000",
                 cursor: avail ? "pointer" : "default",
                 background: avail ? col : "#2a2a2a",
                 color: avail ? textOn(col) : "#666",
                 boxShadow: avail ? "3px 3px 0 0 #000" : "none",
                 opacity: avail ? 1 : 0.6,
+                font: "900 18px 'Outfit',sans-serif",
+                transition: "all 200ms ease",
+                animation: avail ? "qe-power-pulse 1.2s ease-in-out infinite" : "none",
               }}
             >
-              <span
-                style={{
-                  width: 22,
-                  height: 22,
-                  flex: "none",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "#121212",
-                  color: "#fff",
-                  font: "900 12px 'Outfit',sans-serif",
-                }}
-              >
-                {num}
-              </span>
-              <span
-                style={{
-                  font: "900 12px 'Outfit',sans-serif",
-                  textTransform: "uppercase",
-                  letterSpacing: "1px",
-                }}
-              >
-                {avail ? label : label + " ✓"}
-              </span>
+              {keys[i]}
             </button>
           );
         })}
@@ -2106,7 +2089,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               </div>
               <div
                 className="qlogo"
-                onClick={goHome}
+                onClick={pokeEye}
                 style={{
                   position: "absolute",
                   left: "50%",
@@ -2243,7 +2226,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                     <img src="/marcoverse-logo.png" alt="marcoverse" style={{ width: "100%", height: "100%" }} />
                   </a>
                   <a
-                    href="https://github.com/mballalbarran/quickeye"
+                    href="https://github.com/PinnerSinner/quickeye"
                     target="_blank"
                     rel="noopener noreferrer"
                     title="View source on GitHub"
@@ -2783,13 +2766,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                       gap: 22,
                       alignItems: "start",
                       marginBottom: 22,
-                      opacity:
-                        st.countdownActive && st.countdownPhase === "counting"
-                          ? st.countdownNumber === 1
-                            ? 1
-                            : 0.4
-                          : 1,
-                      transition: "opacity 500ms ease-out",
+                      opacity: 1,
                     }}
                   >
                     <div
