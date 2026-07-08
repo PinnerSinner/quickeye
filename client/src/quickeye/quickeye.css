@@ -421,3 +421,40 @@
     opacity: 1;
   }
 }
+
+/* Brick transition animations */
+@keyframes qe-melt-out {
+  0% {
+    transform: scaleY(1) scaleX(1) skewX(0deg);
+    filter: blur(0) brightness(1);
+    opacity: 1;
+  }
+  60% {
+    transform: scaleY(0.55) scaleX(1.05) skewX(-2.4deg);
+    filter: blur(7px) brightness(1.2);
+    opacity: 0.65;
+  }
+  100% {
+    transform: scaleY(0.03) scaleX(1.12) skewX(-7deg) translateY(20px);
+    filter: blur(16px) brightness(1.35);
+    opacity: 0;
+  }
+}
+
+@keyframes qe-assemble-in {
+  0% {
+    transform: scale(0.76) rotate(-3deg);
+    filter: blur(18px);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.04) rotate(0.9deg);
+    filter: blur(2px);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: blur(0);
+    opacity: 1;
+  }
+}

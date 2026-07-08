@@ -98,6 +98,18 @@ interface QState {
   countdownPhase: "idle" | "counting" | "go" | "complete";
   countdownStartTime: number;
   tutorialStep: number;
+  transState: "idle" | "out" | "in";
+  brickPhase: "gone" | "start" | "settle";
+  bricks: Array<{
+    id: string;
+    type: string;
+    color: string;
+    size: number;
+    dx: number;
+    dy: number;
+    rot: number;
+    delay: number;
+  }>;
 }
 
 export interface QuickeyeGameProps {
@@ -175,6 +187,9 @@ function initialState(): QState {
     countdownPhase: "idle",
     countdownStartTime: 0,
     tutorialStep: -1,
+    transState: "idle",
+    brickPhase: "gone",
+    bricks: [],
   };
 }
 
@@ -284,70 +299,6 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   const tension = tensionOf(st);
   tensionRef.current = tension;
   const iris = IRIS_CYCLE[st.irisIdx % IRIS_CYCLE.length];
-
-  // ---------- background field (all screens) ----------
-  const initBg = () => {
-    const cv = bgRef.current;
-    if (!cv) return;
-    const ctx = cv.getContext("2d");
-    if (!ctx) return;
-    const fit = () => {
-      cv.width = window.innerWidth;
-      cv.height = window.innerHeight;
-    };
-    fit();
-    bgResizeRef.current = fit;
-    window.addEventListener("resize", fit);
-    const types = ["circle", "triangle", "square", "diamond", "ring", "plus", "star", "hexagon"];
-    const cols = ["#D02020", "#1040C0", "#F0C020"];
-    type BgShape = {
-      type: string;
-      color: string;
-      x: number;
-      y: number;
-      r: number;
-      rot: number;
-      rotV: number;
-      rise: number;
-      phase: number;
-      amp: number;
-      alpha: number;
-    };
-    const mk = (init: boolean): BgShape => {
-      const big = Math.random() < 0.4;
-      return {
-        type: types[Math.floor(Math.random() * types.length)],
-        color:
-          Math.random() < 0.25
-            ? playerColorRef.current
-            : cols[Math.floor(Math.random() * cols.length)],
-        x: Math.random() * cv.width,
-        y: init ? Math.random() * cv.height : cv.height + 40,
-        r: big ? 26 + Math.random() * 38 : 8 + Math.random() * 15,
-        rot: Math.random() * 6.28,
-        rotV: (Math.random() * 2 - 1) * 0.02,
-        rise: 0.28 + Math.random() * 0.7 + (big ? 0 : 0.35),
-        phase: Math.random() * 6.28,
-        amp: 14 + Math.random() * 42,
-        alpha: big ? 0.05 + Math.random() * 0.06 : 0.13 + Math.random() * 0.16,
-      };
-    };
-    let bg = [...Array(26)].map(() => mk(true));
-    const loop = () => {
-      ctx.clearRect(0, 0, cv.width, cv.height);
-      for (const p of bg) {
-        p.y -= p.rise;
-        p.rot += p.rotV;
-        p.x += Math.sin(p.y * 0.008 + p.phase) * p.amp * 0.02;
-        if (p.y < -p.r - 12) Object.assign(p, mk(false));
-        drawShape(ctx, p.type, p.x, p.y, p.r, p.rot, p.color, p.alpha);
-      }
-      bgRafRef.current = requestAnimationFrame(loop);
-    };
-    cancelAnimationFrame(bgRafRef.current);
-    loop();
-    void bg;
-  };
 
   // ---------- interactive physics header (home only) ----------
   const stopHeader = () => {
@@ -639,21 +590,61 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     audioRef.current?.stopBGM();
   };
 
+  // ---------- brick animations ----------
+  const genBricks = () => {
+    const types = ["circle", "triangle", "square", "diamond", "ring", "plus", "star", "hexagon"];
+    const colors = ["#D02020", "#1040C0", "#F0C020", pc];
+    return [...Array(20)].map((_, i) => {
+      const ang = Math.random() * 6.28;
+      const dist = 260 + Math.random() * 440;
+      return {
+        id: i + "_" + Date.now(),
+        type: types[Math.floor(Math.random() * types.length)],
+        color: colors[Math.floor(Math.random() * colors.length)],
+        size: 14 + Math.random() * 22,
+        dx: Math.cos(ang) * dist,
+        dy: Math.sin(ang) * dist,
+        rot: (Math.random() * 2 - 1) * 180,
+        delay: Math.round(Math.random() * 110),
+      };
+    });
+  };
 
   // ---------- navigation ----------
+  const navigate = (view: View, extra?: Partial<QState>) => {
+    if (stateRef.current.transState !== "idle") return;
+    audioRef.current?.navigate();
+    patch({ transState: "out" });
+    setTimeout(
+      () => {
+        patch({
+          view,
+          transState: "in",
+          brickPhase: "start",
+          bricks: genBricks(),
+          ...extra,
+        });
+        setTimeout(() => patch({ brickPhase: "settle" }), 30);
+        setTimeout(
+          () => patch({ transState: "idle", brickPhase: "gone", bricks: [] }),
+          580
+        );
+      },
+      300
+    );
+  };
+
   const goHome = () => {
     if (st.view === "playing") {
       patch({ quitConfirm: true });
       return;
     }
-    audioRef.current?.navigate();
     stopTimers();
-    patch({ view: "home" });
+    navigate("home");
   };
   const confirmQuit = () => {
-    audioRef.current?.navigate();
     stopTimers();
-    patch({ view: "home", quitConfirm: false });
+    navigate("home", { quitConfirm: false });
   };
   const cancelQuit = () => {
     patch({ quitConfirm: false });
@@ -699,29 +690,23 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     }
   };
   const goSolo = () => {
-    audioRef.current?.navigate();
-    patch({ view: "solo" });
+    navigate("solo");
   };
   const goMulti = () => {
-    audioRef.current?.navigate();
-    patch({ view: "multi" });
+    navigate("multi");
   };
   const goCreate = () => {
-    audioRef.current?.navigate();
-    patch({ view: "create", copyOk: false });
+    navigate("create", { copyOk: false });
     props.onCreateMultiplayer?.(stateRef.current.playerName || "You");
   };
   const goJoin = () => {
-    audioRef.current?.navigate();
-    patch({ view: "join" });
+    navigate("join");
   };
   const goLobby = () => {
-    audioRef.current?.navigate();
-    patch({ view: "lobby" });
+    navigate("lobby");
   };
   const goLeaders = () => {
-    audioRef.current?.navigate();
-    patch({ view: "leaderboard" });
+    navigate("leaderboard");
   };
 
   const onName = (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -2092,7 +2077,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
           <div
             style={{
               ...panelStyle(720, true),
-              animation: "qe-slide-scale-in 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
+              ...getPanelAnimation(st.transState),
               position: "relative",
               background: `linear-gradient(135deg, #121212 0%, #1a1a1a 50%, #0f0f0f 100%), radial-gradient(130% 100% at 50% 118%, rgba(255,96,20,0.15), rgba(255,40,0,0) 62%)`,
             }}
@@ -2160,7 +2145,6 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                     position: "relative",
                     zIndex: 1,
                     fontWeight: 900,
-                    letterSpacing: "0px",
                   }}
                 >
                   QUICKEYE
@@ -2340,7 +2324,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
           <div
             style={{
               ...panelStyle(680),
-              animation: "qe-wipe-left 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+              ...getPanelAnimation(st.transState),
               background: `linear-gradient(135deg, #121212 0%, #1a1a1a 50%, #0f0f0f 100%), radial-gradient(130% 100% at 50% 118%, rgba(255,96,20,0.12), rgba(255,40,0,0) 62%)`,
             }}
           >
@@ -2444,7 +2428,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
 
         {/* ===== MULTIPLAYER ===== */}
         {st.view === "multi" && (
-          <div style={{ ...panelStyle(640), animation: "qe-menu-fade-in 0.5s ease-out" }}>
+          <div style={{ ...panelStyle(640), ...getPanelAnimation(st.transState) }}>
             {smallHeader("Multiplayer", goHome)}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14 }}>
               <button className="qhov" onClick={goCreate} style={multiCard("#1040C0", "#fff")}>
@@ -2477,7 +2461,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
 
         {/* ===== LEADERBOARD ===== */}
         {st.view === "leaderboard" && (
-          <div style={panelStyle(560)}>
+          <div style={{ ...panelStyle(560), ...getPanelAnimation(st.transState) }}>
             {smallHeader("Leaderboard", goHome)}
             <div style={{ display: "flex", gap: 0, border: "3px solid #3a3a3a", width: "fit-content", marginBottom: 16 }}>
               <button onClick={() => patch({ leaderTab: "marathon" })} style={seg(st.leaderTab === "marathon")}>
@@ -2507,7 +2491,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
 
         {/* ===== CREATE ===== */}
         {st.view === "create" && (
-          <div style={panelStyle(520)}>
+          <div style={{ ...panelStyle(520), ...getPanelAnimation(st.transState) }}>
             {smallHeader("Create Game", goMulti)}
             <div style={labelStyle}>Your room code</div>
             <div style={{ display: "flex", gap: 12, alignItems: "stretch", marginBottom: 20, marginTop: 10 }}>
@@ -2556,7 +2540,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
 
         {/* ===== LOBBY ===== */}
         {st.view === "lobby" && (
-          <div style={panelStyle(520)}>
+          <div style={{ ...panelStyle(520), ...getPanelAnimation(st.transState) }}>
             {smallHeader("Waiting Room", goMulti)}
             <div style={{ textAlign: "center", marginBottom: 20 }}>
               <div style={{ font: "500 13px 'Outfit',sans-serif", color: "#999", marginBottom: 10 }}>
@@ -2601,7 +2585,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
 
         {/* ===== JOIN ===== */}
         {st.view === "join" && (
-          <div style={panelStyle(520)}>
+          <div style={{ ...panelStyle(520), ...getPanelAnimation(st.transState) }}>
             {smallHeader("Join Room", goMulti)}
             <div style={labelStyle}>Room code (4 characters)</div>
             <input
@@ -3115,12 +3099,72 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
           </div>
         )}
       </div>
+      {/* Brick transition overlay */}
+      {st.brickPhase !== "gone" && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 45, pointerEvents: "none" }}>
+          {st.bricks.map((b) => {
+            const clip = {
+              circle: "none",
+              ring: "none",
+              square: "none",
+              triangle: "polygon(50% 0,98% 98%,2% 98%)",
+              diamond: "polygon(50% 0,100% 50%,50% 100%,0 50%)",
+              hexagon: "polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%)",
+              star: "polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)",
+              plus: "polygon(36% 0,64% 0,64% 36%,100% 36%,100% 64%,64% 64%,64% 100%,36% 100%,36% 64%,0 64%,0 36%,36% 36%)",
+            } as Record<string, string>;
+            const isRing = b.type === "ring";
+            const isCircle = b.type === "circle";
+            const clipPath = clip[b.type as keyof typeof clip] || "none";
+            const settled = st.brickPhase === "settle";
+            return (
+              <div
+                key={b.id}
+                style={{
+                  position: "fixed",
+                  left: "50%",
+                  top: "50%",
+                  width: b.size,
+                  height: b.size,
+                  background: isRing ? "transparent" : b.color,
+                  borderRadius: isCircle || isRing ? "50%" : 0,
+                  border: isRing ? `${Math.max(3, b.size * 0.24)}px solid ${b.color}` : "none",
+                  boxSizing: "border-box",
+                  clipPath: clipPath !== "none" ? clipPath : undefined,
+                  WebkitClipPath: clipPath !== "none" ? clipPath : undefined,
+                  transform: settled
+                    ? `translate(-50%,-50%) translate(0,0) rotate(0deg) scale(0.2)`
+                    : `translate(-50%,-50%) translate(${b.dx.toFixed(1)}px,${b.dy.toFixed(1)}px) rotate(${b.rot.toFixed(1)}deg) scale(1)`,
+                  opacity: settled ? 0 : 0.95,
+                  transition: `transform 560ms cubic-bezier(.22,1.55,.36,1) ${b.delay}ms, opacity 420ms ease ${b.delay + 160}ms`,
+                }}
+              />
+            );
+          })}
+        </div>
+      )}
       <canvas ref={overRef} className="qe-over-canvas" />
     </>
   );
 }
 
 // ---------- shared inline-style helpers ----------
+function getPanelAnimation(transState: string): CSSProperties {
+  if (transState === "out") {
+    return {
+      animation: "qe-melt-out 300ms cubic-bezier(.5,0,.85,.35) forwards",
+      transformOrigin: "center top",
+    };
+  }
+  if (transState === "in") {
+    return {
+      animation: "qe-assemble-in 520ms cubic-bezier(.22,1.5,.32,1) both",
+      transformOrigin: "center center",
+    };
+  }
+  return {};
+}
+
 function panelStyle(width: number, overflowHidden = false): CSSProperties {
   return {
     width,
