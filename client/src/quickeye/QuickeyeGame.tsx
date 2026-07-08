@@ -857,9 +857,9 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   const dimStyle = (revealed: boolean) => ({
     position: "absolute" as const,
     inset: 0,
-    background: "rgba(4,4,8,0.66)",
+    background: "rgba(0,0,0,0.92)",
     opacity: revealed ? 0 : 1,
-    transition: "opacity 480ms ease",
+    transition: "opacity 420ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
     pointerEvents: "none" as const,
     zIndex: 5,
   });
@@ -2092,7 +2092,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
           <div
             style={{
               ...panelStyle(720, true),
-              animation: "qe-wipe-up 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+              animation: "qe-slide-scale-in 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
               position: "relative",
               background: `linear-gradient(135deg, #121212 0%, #1a1a1a 50%, #0f0f0f 100%), radial-gradient(130% 100% at 50% 118%, rgba(255,96,20,0.15), rgba(255,40,0,0) 62%)`,
             }}
@@ -2144,23 +2144,23 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 </div>
                 <div
                   style={{
-                    font: "900 42px/0.95 'Courier New', monospace",
+                    font: "900 48px/0.9 Impact, 'Arial Black', sans-serif",
                     textTransform: "uppercase",
-                    letterSpacing: "2px",
+                    letterSpacing: "-2px",
                     color: "#fff",
                     textShadow: `
-                      -2px -2px 0 ${iris},
-                      2px -2px 0 ${iris},
-                      -2px 2px 0 ${iris},
-                      2px 2px 0 ${iris},
-                      0 0 20px ${iris}80,
-                      0 0 40px ${iris}40,
-                      0 0 60px ${iris}20
+                      0 3px 0 #000,
+                      0 6px 0 #000,
+                      0 9px 0 #000,
+                      0 12px 12px rgba(0,0,0,0.5),
+                      0 0 20px ${iris}99,
+                      0 0 40px ${iris}66
                     `,
                     animation: "qe-glow 2s ease-in-out infinite",
                     position: "relative",
                     zIndex: 1,
                     fontWeight: 900,
+                    letterSpacing: "0px",
                   }}
                 >
                   QUICKEYE
@@ -2981,6 +2981,8 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               alignItems: "center",
               justifyContent: "center",
               pointerEvents: "none",
+              background: st.tutorialStep < 3 ? "rgba(0,0,0,0.85)" : "rgba(0,0,0,0.1)",
+              transition: "background 420ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
             }}
           >
             <div
@@ -2991,7 +2993,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 color: COUNTDOWN_COLORS[st.tutorialStep],
                 WebkitTextStroke: "6px #000",
                 textStroke: "6px #000",
-                filter: "drop-shadow(10px 10px 0 #000000cc)",
+                filter: `drop-shadow(10px 10px 0 #000000cc) brightness(${st.tutorialStep === 0 ? 0.8 : st.tutorialStep === 1 ? 0.9 : st.tutorialStep === 2 ? 1 : 1.2})`,
                 animation: `${st.tutorialStep % 2 === 0 ? "qe-countdown-pop" : "qe-countdown-pop-alt"} 0.6s cubic-bezier(.34,1.6,.5,1)`,
                 zIndex: 10,
                 position: "relative",
@@ -3007,7 +3009,8 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
           <div
             style={{
               width: 500,
-              background: "#fff",
+              background: "rgba(245,245,245,0.96)",
+              backdropFilter: "blur(4px)",
               border: "4px solid #000",
               boxShadow: "12px 12px 0 0 #000",
               padding: "38px 34px",
