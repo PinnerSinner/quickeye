@@ -7,7 +7,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: scale(1.16);
+  transform: scale(1.28);
   transform-origin: center center;
   font-family: "Outfit", sans-serif;
 }
@@ -383,5 +383,37 @@
   }
   75% {
     transform: scale(1.05) rotate(-1deg);
+  }
+}
+@keyframes qe-wipe-left {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes qe-wipe-right {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes qe-wipe-up {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes qe-wipe-down {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
   }
 }

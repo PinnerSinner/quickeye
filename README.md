@@ -46,6 +46,30 @@ Standard matching with three special power-ups:
 
 **Visual Design**: Blue (#1040C0) — premium, strategic feel.
 
+## Gameplay Screenshots
+
+### Game Board in Action
+![Game Board](./screenshots/v2-board.png)
+*Live gameplay with the shared card (center), player hand (right), and real-time leaderboard (bottom). Symbols shrink and rotate as the 60-second timer counts down, creating increasing tension.*
+
+### Mode Selection
+![Mode Selection](./screenshots/v2-modes.png)
+*Choose your challenge: Marathon for endurance, Race the Clock for quick wins, or Power Play for strategic power-ups.*
+
+### Power Play Mode
+![Power Play](./screenshots/v2-power.png)
+*Strategic power-ups transform the game: Pop removes cards, Reveal shows matches, and Halve splits the deck. Each affects the board state in dramatic ways.*
+
+### Tension & Pressure
+![Tension](./screenshots/v2-tension.png)
+*As time runs out, the visual intensity increases. The ambient glowing ember effect intensifies, and symbols become harder to spot.*
+
+### Game Over & Results
+![Game Results](./screenshots/v2-compare.png)
+*Final standings show your rank, score breakdown, and comparison against opponents. Quick rematch or return to mode selection.*
+
+---
+
 ## Architecture
 
 ```

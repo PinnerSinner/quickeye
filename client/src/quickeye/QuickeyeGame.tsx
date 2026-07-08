@@ -1937,7 +1937,14 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
       <div className="qe-root">
         {/* ===== HOME ===== */}
         {st.view === "home" && (
-          <div style={{ ...panelStyle(720, true), animation: "qe-menu-fade-in 0.5s ease-out" }}>
+          <div
+            style={{
+              ...panelStyle(720, true),
+              animation: "qe-wipe-up 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+              position: "relative",
+              background: `linear-gradient(135deg, #121212 0%, #1a1a1a 50%, #0f0f0f 100%), radial-gradient(130% 100% at 50% 118%, rgba(255,96,20,0.15), rgba(255,40,0,0) 62%)`,
+            }}
+          >
             <div style={{ position: "relative" }}>
               <div
                 ref={hdrRef}
@@ -1985,19 +1992,26 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 </div>
                 <div
                   style={{
-                    font: "900 38px/0.95 'Outfit',sans-serif",
+                    font: "900 42px/0.95 'Courier New', monospace",
                     textTransform: "uppercase",
-                    letterSpacing: "-1px",
+                    letterSpacing: "2px",
                     color: "#fff",
-                    textShadow: `0 2px 4px #00000080, 0 0 20px ${iris}, 0 0 40px ${iris}40, 0 0 60px ${iris}20`,
+                    textShadow: `
+                      -2px -2px 0 ${iris},
+                      2px -2px 0 ${iris},
+                      -2px 2px 0 ${iris},
+                      2px 2px 0 ${iris},
+                      0 0 20px ${iris}80,
+                      0 0 40px ${iris}40,
+                      0 0 60px ${iris}20
+                    `,
                     animation: "qe-glow 2s ease-in-out infinite",
                     position: "relative",
                     zIndex: 1,
-                    fontStyle: "italic",
                     fontWeight: 900,
                   }}
                 >
-                  Quickeye
+                  QUICKEYE
                 </div>
               </div>
             </div>
@@ -2171,7 +2185,13 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
 
         {/* ===== SOLO ===== */}
         {st.view === "solo" && (
-          <div style={{ ...panelStyle(680), animation: "qe-menu-fade-in 0.5s ease-out" }}>
+          <div
+            style={{
+              ...panelStyle(680),
+              animation: "qe-wipe-left 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+              background: `linear-gradient(135deg, #121212 0%, #1a1a1a 50%, #0f0f0f 100%), radial-gradient(130% 100% at 50% 118%, rgba(255,96,20,0.12), rgba(255,40,0,0) 62%)`,
+            }}
+          >
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 8 }}>
               <button className="qhov" onClick={goHome} style={backBtnStyle}>
                 ‹
@@ -3091,17 +3111,16 @@ const powerPlayDiagram = () => (
     style={{
       width: "100%",
       display: "flex",
-      gap: 10,
-      padding: "12px 0 32px 0",
-      justifyContent: "space-around",
-      alignItems: "flex-start",
-      minHeight: 100,
+      gap: 20,
+      padding: "12px 0 8px 0",
+      justifyContent: "center",
+      alignItems: "center",
     }}
   >
     {[
       {
         icon: (
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ stroke: "#1040C0", strokeWidth: 2.5 }}>
+          <svg width="32" height="32" viewBox="0 0 28 28" fill="none" style={{ stroke: "#1040C0", strokeWidth: 2.5 }}>
             <circle cx="14" cy="14" r="8" />
             <path d="M14 4v-2M14 26v-2M4 14h-2M26 14h-2M7 7L5.5 5.5M22.5 22.5L21 21M21 7L22.5 5.5M5.5 22.5L7 21" />
           </svg>
@@ -3111,7 +3130,7 @@ const powerPlayDiagram = () => (
       },
       {
         icon: (
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ stroke: "#22C55E", strokeWidth: 2.5 }}>
+          <svg width="32" height="32" viewBox="0 0 28 28" fill="none" style={{ stroke: "#22C55E", strokeWidth: 2.5 }}>
             <path d="M5 14l5 5 13-13" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         ),
@@ -3120,7 +3139,7 @@ const powerPlayDiagram = () => (
       },
       {
         icon: (
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ stroke: "#F0C020", strokeWidth: 2.5 }}>
+          <svg width="32" height="32" viewBox="0 0 28 28" fill="none" style={{ stroke: "#F0C020", strokeWidth: 2.5 }}>
             <line x1="7" y1="3" x2="14" y2="25" />
             <line x1="21" y1="3" x2="14" y2="25" />
           </svg>
@@ -3133,63 +3152,22 @@ const powerPlayDiagram = () => (
         key={i}
         style={{
           textAlign: "center",
-          position: "relative",
-          width: 60,
-          height: 60,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
+          gap: 4,
+          animation: "qe-power-pulse 2s ease-in-out infinite",
+          animationDelay: `${i * 250}ms`,
         }}
       >
+        <div style={{ marginBottom: 2 }}>{power.icon}</div>
         <div
           style={{
-            position: "absolute",
-            width: 60,
-            height: 60,
-            animation: "qe-power-pulse 1.8s ease-in-out infinite",
-            animationDelay: `${i * 200}ms`,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2,
-          }}
-        >
-          <div style={{ marginBottom: 4 }}>{power.icon}</div>
-        </div>
-        {[...Array(4)].map((_, j) => {
-          const angle = (j * 90) * (Math.PI / 180);
-          const distance = 28;
-          const px = Math.cos(angle) * distance;
-          const py = Math.sin(angle) * distance;
-          return (
-            <div
-              key={j}
-              style={{
-                position: "absolute",
-                width: 8,
-                height: 8,
-                borderRadius: "2px",
-                background: power.color,
-                opacity: 0.3,
-                animation: `qe-powerup-burst 1.2s ease-out infinite`,
-                animationDelay: `${i * 200 + j * 150}ms`,
-                "--px": `${px}px`,
-                "--py": `${py}px`,
-              } as any}
-            />
-          );
-        })}
-        <div
-          style={{
-            position: "absolute",
-            bottom: -16,
             font: "700 9px 'Outfit',sans-serif",
             opacity: 0.8,
             textTransform: "uppercase",
             letterSpacing: "0.5px",
-            zIndex: 1,
+            color: power.color,
           }}
         >
           {power.label}
