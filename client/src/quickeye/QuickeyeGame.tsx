@@ -2004,46 +2004,102 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
 
   const powerHud = () => {
     const pu = st.powerups;
-    const colors = ["#1040C0", "#22C55E", "#F0C020"];
-    const keys = ["1", "2", "3"];
     return (
-      <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
-        {[0, 1, 2].map((i) => {
-          const avail = Object.values(pu)[i];
-          const col = colors[i];
-          return (
-            <button
-              key={keys[i]}
-              onClick={() => usePower(["pop", "reveal", "halve"][i] as PowerType)}
-              disabled={!avail}
-              style={{
-                flex: 1,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "12px",
-                border: "3px solid #000",
-                cursor: avail ? "pointer" : "default",
-                background: avail ? col : "#2a2a2a",
-                color: avail ? textOn(col) : "#666",
-                boxShadow: avail ? "3px 3px 0 0 #000" : "none",
-                opacity: avail ? 1 : 0.6,
-                font: "900 18px 'Outfit',sans-serif",
-                transition: "all 200ms ease",
-                animation: avail ? "qe-power-pulse 1.2s ease-in-out infinite" : "none",
-              }}
-            >
-              {keys[i]}
-            </button>
-          );
-        })}
+      <div style={{ display: "flex", gap: 10, marginBottom: 18, height: 60 }}>
+        {/* BURST / POP */}
+        <button
+          onClick={() => usePower("pop")}
+          disabled={!pu.pop}
+          style={{
+            flex: 1,
+            padding: 0,
+            border: "3px solid #000",
+            cursor: pu.pop ? "pointer" : "default",
+            background: pu.pop ? "#1040C0" : "#2a2a2a",
+            boxShadow: pu.pop ? "3px 3px 0 0 #000" : "none",
+            opacity: pu.pop ? 1 : 0.5,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            animation: pu.pop ? "qe-power-pulse 1s ease-in-out infinite" : "none",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ display: "flex", gap: 6 }}>
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: "#fff",
+                  opacity: pu.pop ? 0.9 : 0.4,
+                  animation: pu.pop ? `qe-bounce 0.6s ease-in-out infinite` : "none",
+                  animationDelay: `${i * 0.15}s`,
+                }}
+              />
+            ))}
+          </div>
+        </button>
+
+        {/* REVEAL */}
+        <button
+          onClick={() => usePower("reveal")}
+          disabled={!pu.reveal}
+          style={{
+            flex: 1,
+            padding: 0,
+            border: "3px solid #000",
+            cursor: pu.reveal ? "pointer" : "default",
+            background: pu.reveal ? "#22C55E" : "#2a2a2a",
+            boxShadow: pu.reveal ? "3px 3px 0 0 #000" : "none",
+            opacity: pu.reveal ? 1 : 0.5,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            animation: pu.reveal ? "qe-power-pulse 1s ease-in-out infinite" : "none",
+            position: "relative",
+          }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M8 12l2 2 4-4" stroke="#000" strokeWidth="2" />
+          </svg>
+        </button>
+
+        {/* HALVE / CUT */}
+        <button
+          onClick={() => usePower("halve")}
+          disabled={!pu.halve}
+          style={{
+            flex: 1,
+            padding: 0,
+            border: "3px solid #000",
+            cursor: pu.halve ? "pointer" : "default",
+            background: pu.halve ? "#F0C020" : "#2a2a2a",
+            boxShadow: pu.halve ? "3px 3px 0 0 #000" : "none",
+            opacity: pu.halve ? 1 : 0.5,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            animation: pu.halve ? "qe-power-pulse 1s ease-in-out infinite" : "none",
+            position: "relative",
+            color: "#121212",
+          }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+            <path d="M12 4v16M4 12h16" />
+          </svg>
+        </button>
       </div>
     );
   };
 
   // ============================ screen JSX ============================
   const isRace = st.mode === "race";
-  const d = tension;
+  const tension_val = tension;
   const revealActive = !!(st.revealUntil && Date.now() < st.revealUntil);
   const danger = isRace ? st.scores.you >= 6 : st.timeLeft <= 5;
   const barW = isRace ? (st.scores.you / 7) * 100 : (st.timeLeft / 60) * 100;
@@ -2631,10 +2687,15 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                     inset: 0,
                     zIndex: 0,
                     pointerEvents: "none",
-                    background:
-                      "radial-gradient(130% 100% at 50% 118%, rgba(255,96,20,0.9), rgba(255,40,0,0) 62%)",
-                    opacity: Number((tension * 0.6).toFixed(3)),
+                    background: `
+                      radial-gradient(circle at 30% 60%, rgba(255,69,0,0.8), transparent 40%),
+                      radial-gradient(circle at 70% 70%, rgba(255,140,0,0.7), transparent 45%),
+                      radial-gradient(circle at 50% 30%, rgba(255,165,0,0.6), transparent 35%),
+                      radial-gradient(ellipse 150% 100% at 50% 120%, rgba(255,96,20,0.9), rgba(255,40,0,0) 62%)
+                    `,
+                    opacity: Number((tension_val * 0.7).toFixed(3)),
                     transition: "opacity 900ms linear",
+                    filter: "blur(1px)",
                   }}
                 />
                 <div style={{ position: "relative", zIndex: 1 }}>
@@ -2780,45 +2841,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                       {st.countdownActive && <div style={dimStyle(st.tutorialStep >= 0)} />}
                       <div style={cardHeader(boardColor, "#fff")}>Match Board</div>
                       <div style={{ padding: 20, overflow: "hidden" }}>
-                        {centerGrid(d)}
-                        {st.countdownActive && st.tutorialStep === 2 && (
-                          <div
-                            style={{
-                              position: "absolute",
-                              inset: 20,
-                              pointerEvents: "none",
-                              zIndex: 4,
-                            }}
-                          >
-                            {d.shared.map((sym, i) => {
-                              if (sym === -1) return null;
-                              const found = d.hand.findIndex((s) => s === sym);
-                              if (found === -1) return null;
-                              const itemStyle =
-                                i % d.cardW === 0
-                                  ? { left: 0 }
-                                  : i % d.cardW === d.cardW - 1
-                                    ? { right: 0 }
-                                    : { left: "50%", transform: "translateX(-50%)" };
-                              return (
-                                <div
-                                  key={i}
-                                  style={{
-                                    position: "absolute",
-                                    ...itemStyle,
-                                    top: Math.floor(i / d.cardW) * 60 + 10,
-                                    width: 40,
-                                    height: 40,
-                                    border: `4px solid ${COUNTDOWN_COLORS[2]}`,
-                                    borderRadius: 4,
-                                    boxShadow: `0 0 0 4px ${COUNTDOWN_COLORS[2]}, 0 0 20px 6px ${COUNTDOWN_COLORS[2]}99`,
-                                    animation: "qe-tokenpulse 0.6s ease-in-out infinite",
-                                  }}
-                                />
-                              );
-                            })}
-                          </div>
-                        )}
+                        {centerGrid(tension_val)}
                       </div>
                     </div>
                     <div
@@ -2833,7 +2856,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                       <div style={cardHeader(pc, textOn(pc))}>
                         {(st.playerName || "You") + " · tap to match"}
                       </div>
-                      <div style={{ padding: 20, overflow: "hidden" }}>{playerGrid(d, revealActive)}</div>
+                      <div style={{ padding: 20, overflow: "hidden" }}>{playerGrid(tension_val, revealActive)}</div>
                     </div>
                   </div>
                   <div
