@@ -1278,7 +1278,8 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               height: irisSize * irisScale,
               borderRadius: "50%",
               background: iris,
-              transition: tracking ? "none" : "background 240ms ease, width 200ms ease, height 200ms ease",
+              color: iris,
+              transition: tracking ? "none" : "background 240ms ease, width 200ms ease, height 200ms ease, color 240ms ease",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -2006,7 +2007,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                     zIndex: 2,
                   }}
                 >
-                  {logoMark(100, 40, [40, 12], true, true, true)}
+                  {logoMark(140, 56, [56, 16], true, true, true)}
                 </div>
                 <div
                   style={{
@@ -2145,22 +2146,51 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 padding: "0 30px 12px",
                 display: "flex",
                 justifyContent: "flex-end",
+                gap: 12,
               }}
             >
               <a
-                href="https://github.com/mballalbarran/quickeye"
+                href="https://marcoverse.co.uk"
                 target="_blank"
                 rel="noopener noreferrer"
+                title="Visit marcoverse.co.uk"
                 style={{
-                  font: "500 10px 'Outfit',sans-serif",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 20,
+                  height: 20,
                   color: "#666",
                   textDecoration: "none",
                   transition: "color 200ms",
+                  fontSize: 14,
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "#999")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "#666")}
               >
-                Made with GitHub
+                🌐
+              </a>
+              <a
+                href="https://github.com/mballalbarran/quickeye"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="View source on GitHub"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 20,
+                  height: 20,
+                  color: "#666",
+                  textDecoration: "none",
+                  transition: "color 200ms",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#000")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#666")}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                </svg>
               </a>
             </div>
           </div>
@@ -2204,7 +2234,18 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               <button className="qhov" onClick={startMarathon} style={modeCard("#D02020", "#fff")}>
                 {marathonDiagram()}
                 <span style={modeTitle}>Marathon</span>
-                <span style={{ ...modeSub, font: "500 10px 'Outfit', sans-serif", letterSpacing: "0px", opacity: 0.75 }}>
+                <span
+                  style={{
+                    display: "inline-block",
+                    background: "rgba(255,255,255,0.2)",
+                    padding: "4px 10px",
+                    borderRadius: "12px",
+                    font: "500 9px 'Outfit', sans-serif",
+                    letterSpacing: "0.5px",
+                    opacity: 0.9,
+                    marginTop: 4,
+                  }}
+                >
                   60 seconds
                 </span>
                 <span style={{ ...modeDesc, opacity: 0.9 }}>Score as many matches as you can</span>
@@ -2212,7 +2253,18 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               <button className="qhov" onClick={startRace} style={modeCard("#F0C020", "#121212")}>
                 {raceDiagram()}
                 <span style={modeTitle}>Race the Clock</span>
-                <span style={{ ...modeSub, font: "900 13px 'Outfit', sans-serif", letterSpacing: "1px" }}>
+                <span
+                  style={{
+                    display: "inline-block",
+                    background: "rgba(0,0,0,0.15)",
+                    padding: "6px 12px",
+                    borderRadius: "14px",
+                    font: "900 10px 'Outfit', sans-serif",
+                    letterSpacing: "1px",
+                    opacity: 0.95,
+                    marginTop: 4,
+                  }}
+                >
                   FIRST TO 7
                 </span>
                 <span style={{ ...modeDesc, opacity: 0.9 }}>
@@ -2222,7 +2274,18 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               <button className="qhov" onClick={startPower} style={modeCard("#1040C0", "#fff")}>
                 {powerPlayDiagram()}
                 <span style={modeTitle}>Power Play</span>
-                <span style={{ ...modeSub, font: "500 10px 'Outfit', sans-serif", letterSpacing: "0px", opacity: 0.75 }}>
+                <span
+                  style={{
+                    display: "inline-block",
+                    background: "rgba(255,255,255,0.2)",
+                    padding: "4px 10px",
+                    borderRadius: "12px",
+                    font: "500 9px 'Outfit', sans-serif",
+                    letterSpacing: "0.5px",
+                    opacity: 0.9,
+                    marginTop: 4,
+                  }}
+                >
                   60 seconds
                 </span>
                 <span style={{ ...modeDesc, opacity: 0.9 }}>Reveal hidden matches, cull cards, or pop them all</span>
@@ -3059,9 +3122,35 @@ const powerPlayDiagram = () => (
     }}
   >
     {[
-      { symbol: "💥", color: "#1040C0", label: "Pop" },
-      { symbol: "✓", color: "#22C55E", label: "Reveal" },
-      { symbol: "⚡", color: "#F0C020", label: "Halve" },
+      {
+        icon: (
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ stroke: "#1040C0", strokeWidth: 2.5 }}>
+            <circle cx="14" cy="14" r="8" />
+            <path d="M14 4v-2M14 26v-2M4 14h-2M26 14h-2M7 7L5.5 5.5M22.5 22.5L21 21M21 7L22.5 5.5M5.5 22.5L7 21" />
+          </svg>
+        ),
+        color: "#1040C0",
+        label: "Pop",
+      },
+      {
+        icon: (
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ stroke: "#22C55E", strokeWidth: 2.5 }}>
+            <path d="M5 14l5 5 13-13" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ),
+        color: "#22C55E",
+        label: "Reveal",
+      },
+      {
+        icon: (
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ stroke: "#F0C020", strokeWidth: 2.5 }}>
+            <line x1="7" y1="3" x2="14" y2="25" />
+            <line x1="21" y1="3" x2="14" y2="25" />
+          </svg>
+        ),
+        color: "#F0C020",
+        label: "Halve",
+      },
     ].map((power, i) => (
       <div
         key={i}
@@ -3071,14 +3160,7 @@ const powerPlayDiagram = () => (
           animationDelay: `${i * 200}ms`,
         }}
       >
-        <div
-          style={{
-            fontSize: "1.4rem",
-            marginBottom: 2,
-          }}
-        >
-          {power.symbol}
-        </div>
+        <div style={{ marginBottom: 4 }}>{power.icon}</div>
         <div
           style={{
             font: "700 9px 'Outfit',sans-serif",

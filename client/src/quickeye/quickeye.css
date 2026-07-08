@@ -293,10 +293,10 @@
 @keyframes qe-iris-glow {
   0%,
   100% {
-    box-shadow: 0 0 12px currentColor, 0 0 24px currentColor;
+    filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 16px currentColor);
   }
   50% {
-    box-shadow: 0 0 20px currentColor, 0 0 36px currentColor;
+    filter: drop-shadow(0 0 14px currentColor) drop-shadow(0 0 28px currentColor);
   }
 }
 @keyframes qe-float0 {
