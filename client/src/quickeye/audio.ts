@@ -325,4 +325,22 @@ export class QuickeyeAudio {
   censorBeep(): void {
     this.playFile("/audio/censor-beep.mp3", 0.6);
   }
+
+  /** Countdown beep: 520Hz square for 3/2/1, rising sweep for GO. */
+  countdownBeep(isGo: boolean): void {
+    const a = this.ctx;
+    if (!a || !this.enabled) return;
+    const t = a.currentTime;
+    const o = a.createOscillator();
+    const g = a.createGain();
+    o.type = "square";
+    o.frequency.setValueAtTime(isGo ? 880 : 520, t);
+    if (isGo) o.frequency.exponentialRampToValueAtTime(1320, t + 0.16);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(isGo ? 0.34 : 0.24, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + (isGo ? 0.3 : 0.15));
+    o.connect(g).connect(a.destination);
+    o.start(t);
+    o.stop(t + (isGo ? 0.32 : 0.17));
+  }
 }

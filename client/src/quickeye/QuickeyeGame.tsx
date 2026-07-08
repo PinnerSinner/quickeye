@@ -97,6 +97,7 @@ interface QState {
   countdownNumber: 3 | 2 | 1 | null;
   countdownPhase: "idle" | "counting" | "go" | "complete";
   countdownStartTime: number;
+  tutorialStep: number;
 }
 
 export interface QuickeyeGameProps {
@@ -173,6 +174,7 @@ function initialState(): QState {
     countdownNumber: null,
     countdownPhase: "idle",
     countdownStartTime: 0,
+    tutorialStep: -1,
   };
 }
 
@@ -219,6 +221,8 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   // DOM refs
   const bgRef = useRef<HTMLCanvasElement | null>(null);
   const hdrRef = useRef<HTMLDivElement | null>(null);
+  const particlesRef = useRef<any[]>([]);
+  let _bgAnimId = 0;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overRef = useRef<HTMLCanvasElement | null>(null);
   const eyeRef = useRef<HTMLDivElement | null>(null);
@@ -803,50 +807,198 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     });
   };
 
+  const CD_STEPS = ["3", "2", "1", "GO"];
+  const COUNTDOWN_COLORS = ["#D02020", "#1040C0", "#F0C020", "#22C55E"];
+  let _cdGen = 0;
+
   const startCountdown = (mode: GameModeKey) => {
-    const now = Date.now();
+    _cdGen = (_cdGen || 0) + 1;
+    const myGen = _cdGen;
+    let i = 0;
+
     patch({
       countdownActive: true,
       countdownPhase: "counting",
-      countdownStartTime: now,
-      countdownNumber: 3,
+      countdownStartTime: Date.now(),
+      tutorialStep: -1,
     });
 
-    // Schedule countdown numbers and sounds
-    const times: Array<[number, 3 | 2 | 1 | "go"]> = [
-      [500, 3],
-      [1500, 2],
-      [2500, 1],
-      [3500, "go"],
-    ];
+    const step = () => {
+      if (stateRef.current.view !== "playing" || myGen !== _cdGen) return;
+      if (i >= CD_STEPS.length) {
+        finishCountdown(mode);
+        return;
+      }
 
-    times.forEach(([delay, num]) => {
-      countdownRef.current = window.setTimeout(() => {
-        if (num === "go") {
-          audioRef.current?.countdownGo();
-          patch({ countdownNumber: null, countdownPhase: "go" });
-          // After GO completes, transition to actual gameplay
-          countdownRef.current = window.setTimeout(() => {
-            const isRace = mode === "race";
-            const state = stateRef.current;
-            patch({
-              countdownActive: false,
-              countdownPhase: "complete",
-              locked: false,
-            });
-            // Unlock game for play
-            tRef.current = window.setInterval(isRace ? tickUp : tick, 1000);
-            bRef.current = window.setInterval(botTick, OPP_INTERVAL_MS);
-            setTimeout(startParticles, 70);
-            playGameplayMusic();
-          }, 500);
-        } else {
-          audioRef.current?.countdownBeep(num);
-          patch({ countdownNumber: num });
-        }
-      }, delay);
-    });
+      const isGo = CD_STEPS[i] === "GO";
+      audioRef.current?.countdownBeep(isGo);
+      patch({ tutorialStep: i });
+      i++;
+      countdownRef.current = window.setTimeout(step, isGo ? 520 : 760);
+    };
+
+    step();
   };
+
+  const finishCountdown = (mode: GameModeKey) => {
+    const isRace = mode === "race";
+    patch({
+      countdownActive: false,
+      countdownPhase: "complete",
+      locked: false,
+      tutorialStep: -1,
+    });
+    tRef.current = window.setInterval(isRace ? tickUp : tick, 1000);
+    bRef.current = window.setInterval(botTick, OPP_INTERVAL_MS);
+    setTimeout(startParticles, 70);
+    playGameplayMusic();
+  };
+
+  const dimStyle = (revealed: boolean) => ({
+    position: "absolute" as const,
+    inset: 0,
+    background: "rgba(4,4,8,0.66)",
+    opacity: revealed ? 0 : 1,
+    transition: "opacity 480ms ease",
+    pointerEvents: "none" as const,
+    zIndex: 5,
+  });
+
+  const playerColor = () => COLORS[colorSel(stateRef.current)].hex;
+
+  const drawShape = (
+    ctx: CanvasRenderingContext2D,
+    type: string,
+    x: number,
+    y: number,
+    r: number,
+    rot: number,
+    color: string,
+    alpha: number
+  ) => {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(1, r * 0.15);
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+
+    switch (type) {
+      case "circle":
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      case "triangle":
+        ctx.beginPath();
+        ctx.moveTo(0, -r);
+        ctx.lineTo(r * 0.866, r * 0.5);
+        ctx.lineTo(-r * 0.866, r * 0.5);
+        ctx.closePath();
+        ctx.fill();
+        break;
+      case "square":
+        ctx.fillRect(-r * 0.707, -r * 0.707, r * 1.414, r * 1.414);
+        break;
+      case "diamond":
+        ctx.beginPath();
+        ctx.moveTo(0, -r);
+        ctx.lineTo(r, 0);
+        ctx.lineTo(0, r);
+        ctx.lineTo(-r, 0);
+        ctx.closePath();
+        ctx.fill();
+        break;
+      case "ring":
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.stroke();
+        break;
+      case "plus":
+        ctx.fillRect(-r * 0.2, -r, r * 0.4, r * 2);
+        ctx.fillRect(-r, -r * 0.2, r * 2, r * 0.4);
+        break;
+      case "star":
+        for (let i = 0; i < 5; i++) {
+          const a = (i * Math.PI * 4) / 5 - Math.PI * 0.5;
+          const x = Math.cos(a) * r;
+          const y = Math.sin(a) * r;
+          if (i === 0) ctx.beginPath();
+          ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fill();
+        break;
+      case "hexagon":
+        for (let i = 0; i < 6; i++) {
+          const a = (i * Math.PI * 2) / 6;
+          const x = Math.cos(a) * r;
+          const y = Math.sin(a) * r;
+          if (i === 0) ctx.beginPath();
+          ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fill();
+        break;
+    }
+    ctx.restore();
+  };
+
+  const initBg = () => {
+    const cv = bgRef.current;
+    if (!cv) return;
+    const ctx = cv.getContext("2d");
+    if (!ctx) return;
+
+    const fit = () => {
+      cv.width = window.innerWidth;
+      cv.height = window.innerHeight;
+    };
+    fit();
+    window.addEventListener("resize", fit);
+
+    const types = ["circle", "triangle", "square", "diamond", "ring", "plus", "star", "hexagon"];
+    const cols = ["#D02020", "#1040C0", "#F0C020"];
+
+    const mk = (init: boolean) => {
+      const big = Math.random() < 0.4;
+      return {
+        type: types[Math.floor(Math.random() * types.length)],
+        color: Math.random() < 0.25 ? playerColor() : cols[Math.floor(Math.random() * cols.length)],
+        x: Math.random() * cv.width,
+        y: init ? Math.random() * cv.height : cv.height + 40,
+        r: big ? 26 + Math.random() * 38 : 8 + Math.random() * 15,
+        rot: Math.random() * 6.28,
+        rotV: (Math.random() * 2 - 1) * 0.02,
+        rise: 0.28 + Math.random() * 0.7 + (big ? 0 : 0.35),
+        phase: Math.random() * 6.28,
+        amp: 14 + Math.random() * 42,
+        alpha: big ? 0.07 + Math.random() * 0.08 : 0.17 + Math.random() * 0.19,
+      };
+    };
+
+    particlesRef.current = [...Array(42)].map(() => mk(true));
+
+    const loop = () => {
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      for (const p of particlesRef.current) {
+        p.y -= p.rise;
+        p.rot += p.rotV;
+        p.x += Math.sin((p.y * 0.008 + p.phase) * Math.PI) * p.amp * 0.02;
+        if (p.y < -p.r - 12) Object.assign(p, mk(false));
+        drawShape(ctx, p.type, p.x, p.y, p.r, p.rot, p.color, p.alpha);
+      }
+      _bgAnimId = requestAnimationFrame(loop);
+    };
+    loop();
+  };
+
+  // Initialize background on mount
+  useEffect(() => {
+    initBg();
+    return () => cancelAnimationFrame(_bgAnimId);
+  }, []);
 
   const begin = (mode: GameModeKey) => {
     audioRef.current?.ensure();
@@ -2661,32 +2813,62 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                         border: "4px solid #000",
                         background: "#fff",
                         boxShadow: "6px 6px 0 0 #000",
-                        opacity:
-                          st.countdownActive && st.countdownPhase === "counting"
-                            ? st.countdownNumber <= 3
-                              ? 1
-                              : 0.3
-                            : 1,
-                        transition: "opacity 500ms ease-out",
+                        position: "relative",
                       }}
                     >
+                      {st.countdownActive && dimStyle(st.tutorialStep >= 0)}
                       <div style={cardHeader(boardColor, "#fff")}>Match Board</div>
-                      <div style={{ padding: 20, overflow: "hidden" }}>{centerGrid(d)}</div>
+                      <div style={{ padding: 20, overflow: "hidden" }}>
+                        {centerGrid(d)}
+                        {st.countdownActive && st.tutorialStep === 2 && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              inset: 20,
+                              pointerEvents: "none",
+                              zIndex: 4,
+                            }}
+                          >
+                            {d.shared.map((sym, i) => {
+                              if (sym === -1) return null;
+                              const found = d.hand.findIndex((s) => s === sym);
+                              if (found === -1) return null;
+                              const itemStyle =
+                                i % d.cardW === 0
+                                  ? { left: 0 }
+                                  : i % d.cardW === d.cardW - 1
+                                    ? { right: 0 }
+                                    : { left: "50%", transform: "translateX(-50%)" };
+                              return (
+                                <div
+                                  key={i}
+                                  style={{
+                                    position: "absolute",
+                                    ...itemStyle,
+                                    top: Math.floor(i / d.cardW) * 60 + 10,
+                                    width: 40,
+                                    height: 40,
+                                    border: `4px solid ${COUNTDOWN_COLORS[2]}`,
+                                    borderRadius: 4,
+                                    boxShadow: `0 0 0 4px ${COUNTDOWN_COLORS[2]}, 0 0 20px 6px ${COUNTDOWN_COLORS[2]}99`,
+                                    animation: "qe-tokenpulse 0.6s ease-in-out infinite",
+                                  }}
+                                />
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div
                       style={{
                         border: "4px solid #000",
                         background: "#fff",
                         boxShadow: "6px 6px 0 0 #000",
-                        opacity:
-                          st.countdownActive && st.countdownPhase === "counting"
-                            ? st.countdownNumber <= 2
-                              ? 1
-                              : 0.3
-                            : 1,
-                        transition: "opacity 500ms ease-out",
+                        position: "relative",
                       }}
                     >
+                      {st.countdownActive && dimStyle(st.tutorialStep >= 1)}
                       <div style={cardHeader(pc, textOn(pc))}>
                         {(st.playerName || "You") + " · tap to match"}
                       </div>
@@ -2789,7 +2971,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
         )}
 
         {/* ===== COUNTDOWN OVERLAY ===== */}
-        {st.countdownActive && (
+        {st.countdownActive && st.tutorialStep >= 0 && (
           <div
             style={{
               position: "fixed",
@@ -2798,62 +2980,25 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              pointerEvents: st.countdownPhase === "complete" ? "none" : "auto",
+              pointerEvents: "none",
             }}
           >
-
-            {/* Background dimming - full dim during countdown, fades on GO */}
             <div
               style={{
-                position: "absolute",
-                inset: 0,
-                background: "rgba(0, 0, 0, 0.7)",
-                opacity:
-                  st.countdownPhase === "go"
-                    ? 0
-                    : st.countdownPhase === "counting"
-                    ? 0.7
-                    : 0,
-                transition: "opacity 400ms ease-out",
-                zIndex: 3,
-                pointerEvents: "none",
+                fontSize: "clamp(180px, 32vw, 440px)",
+                fontWeight: 900,
+                fontFamily: "'Outfit', sans-serif",
+                color: COUNTDOWN_COLORS[st.tutorialStep],
+                WebkitTextStroke: "6px #000",
+                textStroke: "6px #000",
+                filter: "drop-shadow(10px 10px 0 #000000cc)",
+                animation: `${st.tutorialStep % 2 === 0 ? "qe-countdown-pop" : "qe-countdown-pop-alt"} 0.6s cubic-bezier(.34,1.6,.5,1)`,
+                zIndex: 10,
+                position: "relative",
               }}
-            />
-            {st.countdownNumber !== null && (
-              <div
-                style={{
-                  fontSize: "clamp(8rem, 25vw, 18rem)",
-                  fontWeight: "900",
-                  fontFamily: "'Outfit', sans-serif",
-                  color:
-                    st.countdownNumber === 3
-                      ? "#D02020"
-                      : st.countdownNumber === 2
-                      ? "#F0C020"
-                      : "#3366FF",
-                  textShadow: "0 0 40px rgba(0, 0, 0, 0.8)",
-                  animation: "qe-countdown-scale 0.6s cubic-bezier(0.34, 1.2, 0.5, 1)",
-                  zIndex: 1,
-                }}
-              >
-                {st.countdownNumber}
-              </div>
-            )}
-            {st.countdownPhase === "go" && (
-              <div
-                style={{
-                  fontSize: "clamp(6rem, 20vw, 14rem)",
-                  fontWeight: "900",
-                  fontFamily: "'Outfit', sans-serif",
-                  color: "#22C55E",
-                  textShadow: "0 0 50px rgba(34, 197, 94, 0.6)",
-                  animation: "qe-countdown-scale 0.8s cubic-bezier(0.34, 1.2, 0.5, 1)",
-                  zIndex: 1,
-                }}
-              >
-                GO!
-              </div>
-            )}
+            >
+              {CD_STEPS[st.tutorialStep]}
+            </div>
           </div>
         )}
 

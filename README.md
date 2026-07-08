@@ -1,13 +1,16 @@
 # Quickeye 👁️
 
-A real-time, browser-based multiplayer card-matching game inspired by Dobble (Spot It!) with a speed-pressure twist. Every round has a visible countdown timer where symbols shrink and rotate as time runs out, creating escalating tension and reward fast recognition.
+A real-time, browser-based multiplayer card-matching game inspired by Dobble (Spot It!) with a speed-pressure twist. Match symbols faster than your opponents with each round showing a visible countdown timer that increases the tension as time runs out.
+
+**🎮 [Play Now on marcoverse.link](https://marcoverse.link)**
 
 ## What Makes Quickeye Different
 
-Unlike traditional Dobble, Quickeye introduces **progressive symbol degradation**:
-- Symbols on the shared card visually shrink and rotate as the countdown ticks down
+Quickeye transforms the classic matching game with **real-time multiplayer** and **speed-pressure mechanics**:
+- Live competitive gameplay against real opponents (or solo against AI)
+- Visible countdown timer creates escalating tension
 - Early seconds are forgiving; later seconds are frantic
-- This mechanic rewards reflexes without making the game unplayable for newer players
+- Rewards fast reflexes and sharp pattern recognition without requiring memorization
 - Creates natural pacing: easy matches early, high-pressure moments near timeout
 
 ## Core Game Rule
@@ -50,7 +53,7 @@ Standard matching with three special power-ups:
 
 ### Game Board in Action
 ![Game Board](./screenshots/v2-board.png)
-*Live gameplay with the shared card (center), player hand (right), and real-time leaderboard (bottom). Symbols shrink and rotate as the 60-second timer counts down, creating increasing tension.*
+*Live gameplay with the shared card (center), player hand (right), and real-time leaderboard (bottom). Real-time competition with visible timer creating tension.*
 
 ### Mode Selection
 ![Mode Selection](./screenshots/v2-modes.png)
@@ -162,17 +165,6 @@ When a round starts, a 3-second countdown teaches the game mechanics through vis
 
 Opacity transitions use `500ms ease-out` for smooth visual narrative.
 
-#### Symbol Animation System
-
-Symbols shrink and rotate as the countdown progresses (per game mode):
-- **Marathon/Power Play** (60s): Symbols shrink ~15% by round end
-- **Race the Clock**: No shrink (matches come faster)
-- Rotation is continuous: `360deg / (round_time_ms)` radians/ms
-
-CSS transform applied per-tile:
-```jsx
-transform: `scale(${symbolScale}) rotate(${symbolRotation}deg)`
-```
 
 #### Eye Logo System
 
@@ -375,17 +367,6 @@ npm run deploy:update
 
 ## Game Mechanics Deep Dive
 
-### Symbol Degradation (Shrink + Rotate)
-
-Symbols become harder to spot as time pressure increases:
-
-```
-Time: 60s ────────────────────→ 0s
-Scale: 1.0 ───────────────────→ 0.85 (15% shrink)
-Rotate: 0° ────────────────────→ 360° × (elapsed / 60)
-```
-
-Effect: Matches that are easy at 50s become nearly impossible at 5s.
 
 ### Scoring System
 
@@ -490,10 +471,10 @@ After game:
 - Reconnection handling (dropped WebSocket recovery)
 - User accounts + authentication (Cognito)
 - Custom symbol sets (themes)
-- Deck mutation (symbols rotate in from pool, prevent memorization)
+- Deck mutation (dynamic symbol pool to prevent memorization)
 - Mobile-friendly UI (responsive breakpoints)
-- Sound effects + audio synthesis
-- Tutorial mode (step-by-step rules)
+- Enhanced audio design
+- Interactive tutorial mode (step-by-step rules)
 
 ### Known Issues
 - Safari may clip rounded corners on tiles (CSS issue)
