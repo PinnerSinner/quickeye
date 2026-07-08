@@ -680,6 +680,8 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     }
 
     patch({ eyePokes: newPokes, eyeExpression: expression });
+
+    // Clear any existing reset timeout
     clearTimeout(saveTORef.current);
 
     // Timeline for the easter egg sequence (middle finger triggers at 36 pokes)
@@ -700,8 +702,9 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
         patch({ eyePokes: 0, eyeExpression: "normal" });
       }, 5200);
     } else {
-      // Reset to normal after 3.5s for regular pokes
-      saveTORef.current = window.setTimeout(() => patch({ eyePokes: 0, eyeExpression: "normal" }), 3500);
+      // Extend reset timeout on each poke (if user keeps poking, reset timer keeps resetting)
+      // This allows pokes to accumulate as long as user keeps poking
+      saveTORef.current = window.setTimeout(() => patch({ eyePokes: 0, eyeExpression: "normal" }), 800);
     }
   };
   const goSolo = () => {
@@ -2015,95 +2018,66 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
 
   const powerHud = () => {
     const pu = st.powerups;
+    const powers = [
+      { name: "Pop", key: "1", type: "pop", color: "#1040C0", icon: (active: boolean) => (
+        <div style={{ display: "flex", gap: 6 }}>
+          {[0, 1, 2].map((i) => (
+            <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: "#fff", opacity: active ? 0.9 : 0.4, animation: active ? `qe-bounce 0.6s ease-in-out infinite` : "none", animationDelay: `${i * 0.15}s` }} />
+          ))}
+        </div>
+      )},
+      { name: "Reveal", key: "2", type: "reveal", color: "#22C55E", icon: () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M8 12l2 2 4-4" stroke="#000" strokeWidth="2" />
+        </svg>
+      )},
+      { name: "Halve", key: "3", type: "halve", color: "#F0C020", icon: () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+          <path d="M12 4v16M4 12h16" />
+        </svg>
+      )},
+    ];
+
     return (
-      <div style={{ display: "flex", gap: 10, marginBottom: 18, height: 60 }}>
-        {/* BURST / POP */}
-        <button
-          onClick={() => usePower("pop")}
-          disabled={!pu.pop}
-          style={{
-            flex: 1,
-            padding: 0,
-            border: "3px solid #000",
-            cursor: pu.pop ? "pointer" : "default",
-            background: pu.pop ? "#1040C0" : "#2a2a2a",
-            boxShadow: pu.pop ? "3px 3px 0 0 #000" : "none",
-            opacity: pu.pop ? 1 : 0.5,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            animation: pu.pop ? "qe-power-pulse 1s ease-in-out infinite" : "none",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          <div style={{ display: "flex", gap: 6 }}>
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: "#fff",
-                  opacity: pu.pop ? 0.9 : 0.4,
-                  animation: pu.pop ? `qe-bounce 0.6s ease-in-out infinite` : "none",
-                  animationDelay: `${i * 0.15}s`,
-                }}
-              />
-            ))}
-          </div>
-        </button>
-
-        {/* REVEAL */}
-        <button
-          onClick={() => usePower("reveal")}
-          disabled={!pu.reveal}
-          style={{
-            flex: 1,
-            padding: 0,
-            border: "3px solid #000",
-            cursor: pu.reveal ? "pointer" : "default",
-            background: pu.reveal ? "#22C55E" : "#2a2a2a",
-            boxShadow: pu.reveal ? "3px 3px 0 0 #000" : "none",
-            opacity: pu.reveal ? 1 : 0.5,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            animation: pu.reveal ? "qe-power-pulse 1s ease-in-out infinite" : "none",
-            position: "relative",
-          }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="9" />
-            <path d="M8 12l2 2 4-4" stroke="#000" strokeWidth="2" />
-          </svg>
-        </button>
-
-        {/* HALVE / CUT */}
-        <button
-          onClick={() => usePower("halve")}
-          disabled={!pu.halve}
-          style={{
-            flex: 1,
-            padding: 0,
-            border: "3px solid #000",
-            cursor: pu.halve ? "pointer" : "default",
-            background: pu.halve ? "#F0C020" : "#2a2a2a",
-            boxShadow: pu.halve ? "3px 3px 0 0 #000" : "none",
-            opacity: pu.halve ? 1 : 0.5,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            animation: pu.halve ? "qe-power-pulse 1s ease-in-out infinite" : "none",
-            position: "relative",
-            color: "#121212",
-          }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-            <path d="M12 4v16M4 12h16" />
-          </svg>
-        </button>
+      <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
+        {powers.map((p) => {
+          const active = pu[p.type as keyof typeof pu];
+          return (
+            <button
+              key={p.type}
+              onClick={() => usePower(p.type as "pop" | "reveal" | "halve")}
+              disabled={!active}
+              style={{
+                flex: 1,
+                padding: "8px 6px",
+                border: "3px solid #000",
+                cursor: active ? "pointer" : "default",
+                background: active ? p.color : "#2a2a2a",
+                boxShadow: active ? "3px 3px 0 0 #000" : "none",
+                opacity: active ? 1 : 0.5,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                animation: active ? "qe-power-pulse 1s ease-in-out infinite" : "none",
+                position: "relative",
+                color: p.type === "halve" ? "#121212" : "#fff",
+                gap: 4,
+              }}
+            >
+              {p.type === "pop" ? p.icon(active) : p.icon()}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                <div style={{ font: "700 11px 'Outfit',sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  {p.name}
+                </div>
+                <div style={{ font: "600 9px 'Outfit',sans-serif", opacity: 0.75 }}>
+                  Press {p.key}
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
     );
   };
@@ -2135,7 +2109,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             <div style={{ position: "relative" }}>
               <div
                 ref={hdrRef}
-                style={{ height: 210, background: "#000", overflow: "hidden", cursor: "crosshair", position: "relative" }}
+                style={{ height: 210, background: "#000", overflow: "hidden", cursor: "crosshair", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
               >
                 {[...Array(6)].map((_, i) => (
                   <div
@@ -2153,52 +2127,16 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                     }}
                   />
                 ))}
-              </div>
-              <div
-                className="qlogo"
-                onClick={pokeEye}
-                style={{
-                  position: "absolute",
-                  left: "50%",
-                  top: 210,
-                  transform: "translateX(-50%)",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 12,
-                  cursor: "pointer",
-                  zIndex: 20,
-                }}
-              >
                 <div
+                  className="qlogo"
+                  onClick={pokeEye}
                   style={{
                     position: "relative",
-                    zIndex: 2,
+                    cursor: "pointer",
+                    zIndex: 10,
                   }}
                 >
                   {logoMark(140, 56, [56, 16], true, true, true)}
-                </div>
-                <div
-                  style={{
-                    font: "900 56px/0.9 Impact, 'Arial Black', sans-serif",
-                    textTransform: "uppercase",
-                    letterSpacing: "-2px",
-                    color: "#fff",
-                    textShadow: `
-                      0 3px 0 #000,
-                      0 6px 0 #000,
-                      0 9px 0 #000,
-                      0 12px 12px rgba(0,0,0,0.5),
-                      0 0 20px ${iris}99,
-                      0 0 40px ${iris}66
-                    `,
-                    animation: "qe-glow 2s ease-in-out infinite",
-                    position: "relative",
-                    zIndex: 1,
-                    fontWeight: 900,
-                  }}
-                >
-                  QUICKEYE
                 </div>
               </div>
             </div>
