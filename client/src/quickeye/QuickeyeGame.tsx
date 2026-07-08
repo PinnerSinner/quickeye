@@ -1622,13 +1622,13 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
 
   const centerGrid = (d: number) => {
     const r = st.round;
-    const sc = 1 - d * 0.26;
+    const sc = 1;
     return (
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(4,1fr)",
-          gap: 10,
+          gap: 4,
           transform: `scale(${sc.toFixed(3)})`,
           transition: "transform 400ms ease",
         }}
@@ -1655,14 +1655,14 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   const playerGrid = (d: number, revealActive: boolean) => {
     const r = st.round;
     const { matchedId, wrongId, cullIdx, popIdx, tokenUsed } = st;
-    const sc = 1 - d * 0.26;
+    const sc = 1;
     const shared = r.shared;
     return (
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(4,1fr)",
-          gap: 10,
+          gap: 4,
           transform: `scale(${sc.toFixed(3)})`,
           transition: "transform 400ms ease",
         }}
@@ -2109,7 +2109,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             <div style={{ position: "relative" }}>
               <div
                 ref={hdrRef}
-                style={{ height: 210, background: "#000", overflow: "hidden", cursor: "crosshair", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
+                style={{ height: 210, background: "#000", overflow: "visible", cursor: "crosshair", position: "relative" }}
               >
                 {[...Array(6)].map((_, i) => (
                   <div
@@ -2131,9 +2131,12 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                   className="qlogo"
                   onClick={pokeEye}
                   style={{
-                    position: "relative",
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
                     cursor: "pointer",
-                    zIndex: 10,
+                    zIndex: 20,
                   }}
                 >
                   {logoMark(140, 56, [56, 16], true, true, true)}
@@ -3302,7 +3305,6 @@ const powerPlayDiagram = () => (
           animationDelay: `${i * 250}ms`,
         }}
       >
-        <div style={{ marginBottom: 2 }}>{power.icon}</div>
         <div
           style={{
             font: "700 9px 'Outfit',sans-serif",
