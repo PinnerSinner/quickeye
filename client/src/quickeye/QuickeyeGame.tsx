@@ -51,7 +51,6 @@ type View =
   | "create"
   | "join"
   | "leaderboard"
-  | "lobby"
   | "playing"
   | "over";
 
