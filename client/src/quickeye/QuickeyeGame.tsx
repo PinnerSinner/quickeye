@@ -2327,7 +2327,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             style={{
               ...panelStyle(680),
               ...getPanelAnimation(st.transState),
-              background: `linear-gradient(135deg, #121212 0%, #1a1a1a 50%, #0f0f0f 100%), radial-gradient(130% 100% at 50% 118%, rgba(255,96,20,0.12), rgba(255,40,0,0) 62%)`,
+              background: `linear-gradient(135deg, rgba(18,18,18,0.7) 0%, rgba(26,26,26,0.7) 50%, rgba(15,15,15,0.7) 100%), radial-gradient(130% 100% at 50% 118%, rgba(255,96,20,0.2), rgba(255,40,0,0) 62%)`,
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 8 }}>
