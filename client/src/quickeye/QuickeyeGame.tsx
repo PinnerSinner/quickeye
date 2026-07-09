@@ -653,23 +653,23 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     const prevPokes = stateRef.current.eyePokes;
     let expression: QState["eyeExpression"] = "normal";
 
-    if (newPokes <= 5) {
+    if (newPokes <= 7) {
       audioRef.current?.punch();
       expression = "ouch";
-    } else if (newPokes <= 12) {
+    } else if (newPokes <= 14) {
       audioRef.current?.punch();
       expression = "annoyed";
-    } else if (newPokes <= 22) {
+    } else if (newPokes <= 21) {
       audioRef.current?.punch();
       expression = "angry";
       // Trigger frustrated grunts on entry to angry phase
-      if (prevPokes < 13) {
+      if (prevPokes < 15) {
         audioRef.current?.playFile("/audio/frustrated-grunts.mp3", 0.6);
       }
-    } else if (newPokes <= 35) {
+    } else if (newPokes <= 28) {
       audioRef.current?.punch();
       expression = "furious";
-    } else if (newPokes >= 36) {
+    } else if (newPokes >= 29) {
       // Stop frustrated grunts if still playing
       audioRef.current?.stop("/audio/frustrated-grunts.mp3");
       // Play swear bleep and scream simultaneously
@@ -683,8 +683,8 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     // Clear any existing reset timeout
     clearTimeout(saveTORef.current);
 
-    // Timeline for the easter egg sequence (middle finger triggers at 36 pokes)
-    if (newPokes >= 36) {
+    // Timeline for the easter egg sequence (middle finger triggers at 29 pokes)
+    if (newPokes >= 29) {
       // Middle finger stays up for 3.2s (duration of audio)
       saveTORef.current = window.setTimeout(() => {
         // Eye looks around (recovery animation) for 1.3s
@@ -2665,12 +2665,14 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                   }}
                 />
                 <div style={{ position: "relative", zIndex: 1 }}>
+                  {st.countdownActive && <div style={dimStyle(st.tutorialStep >= 2)} />}
                   <div
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
                       marginBottom: 16,
+                      position: "relative",
                     }}
                   >
                     <div
@@ -2794,6 +2796,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                       alignItems: "start",
                       marginBottom: 22,
                       opacity: 1,
+                      position: "relative",
                     }}
                   >
                     <div
@@ -2827,16 +2830,23 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                   </div>
                   <div
                     style={{
-                      font: "700 10px 'Outfit',sans-serif",
-                      color: "#888",
-                      textTransform: "uppercase",
-                      letterSpacing: "2px",
-                      marginBottom: 8,
+                      position: "relative",
                     }}
                   >
-                    Live standings
+                    {st.countdownActive && <div style={dimStyle(st.tutorialStep >= 2)} />}
+                    <div
+                      style={{
+                        font: "700 10px 'Outfit',sans-serif",
+                        color: "#888",
+                        textTransform: "uppercase",
+                        letterSpacing: "2px",
+                        marginBottom: 8,
+                      }}
+                    >
+                      Live standings
+                    </div>
+                    {liveLeaderboard()}
                   </div>
-                  {liveLeaderboard()}
                 </div>
               </div>
             </div>
@@ -3362,7 +3372,7 @@ const modeSub: CSSProperties = {
   letterSpacing: "2px",
   opacity: 0.85,
 };
-const modeDesc: CSSProperties = { font: "500 12px/1.5 'Outfit',sans-serif", marginTop: 8 };
+const modeDesc: CSSProperties = { font: "500 12px/1.5 'Outfit',sans-serif", marginTop: 8, textShadow: "1px 1px 2px rgba(0,0,0,0.5)" };
 function multiCard(bg: string, color: string): CSSProperties {
   return {
     display: "flex",
