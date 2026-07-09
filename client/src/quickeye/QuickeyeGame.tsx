@@ -649,8 +649,12 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     patch({ quitConfirm: false });
   };
   const pokeEye = () => {
-    const newPokes = stateRef.current.eyePokes + 1;
-    const prevPokes = stateRef.current.eyePokes;
+    const current = stateRef.current.eyePokes;
+
+    // Prevent clicking during the easter egg sequence
+    if (current >= 21) return;
+
+    const newPokes = current + 1;
     let expression: QState["eyeExpression"] = "normal";
 
     if (newPokes <= 5) {
@@ -662,48 +666,41 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     } else if (newPokes <= 15) {
       audioRef.current?.punch();
       expression = "angry";
-      // Trigger frustrated grunts on entry to angry phase
-      if (prevPokes < 11) {
+      if (current < 11) {
         audioRef.current?.playFile("/audio/frustrated-grunts.mp3", 0.6);
       }
     } else if (newPokes <= 20) {
       audioRef.current?.punch();
       expression = "furious";
-    } else if (newPokes >= 21) {
-      // Stop frustrated grunts if still playing
+    } else if (newPokes === 21) {
+      // Middle finger triggers at exactly 21
       audioRef.current?.stop("/audio/frustrated-grunts.mp3");
-      // Play swear bleep and scream simultaneously
       audioRef.current?.censorBeep();
       audioRef.current?.scream();
       expression = "middle-finger";
+
+      // Set up the sequence timeline
+      setTimeout(() => {
+        patch({ eyePokes: 21, eyeExpression: "normal" });
+      }, 3200);
+
+      setTimeout(() => {
+        audioRef.current?.playFile("/audio/ahem.mp3", 0.5);
+      }, 4500);
+
+      setTimeout(() => {
+        patch({ eyePokes: 0, eyeExpression: "normal" });
+      }, 5200);
     }
 
     patch({ eyePokes: newPokes, eyeExpression: expression });
 
-    // Clear any existing reset timeout
-    clearTimeout(saveTORef.current);
-
-    // Timeline for the easter egg sequence (middle finger triggers at 21 pokes)
-    if (newPokes >= 21) {
-      // Middle finger stays up for 3.2s (duration of audio)
-      saveTORef.current = window.setTimeout(() => {
-        // Eye looks around (recovery animation) for 1.3s
-        patch({ eyePokes: newPokes, eyeExpression: "normal" });
-      }, 3200);
-
-      // Gentle cough sound plays 1.3s after sounds end (4.5s total)
-      saveTORef.current = window.setTimeout(() => {
-        audioRef.current?.playFile("/audio/ahem.mp3", 0.5);
-      }, 4500);
-
-      // Full reset after 5.2s
+    // Only reset if not in middle-finger sequence
+    if (newPokes < 21) {
+      clearTimeout(saveTORef.current);
       saveTORef.current = window.setTimeout(() => {
         patch({ eyePokes: 0, eyeExpression: "normal" });
-      }, 5200);
-    } else {
-      // Extend reset timeout on each poke (if user keeps poking, reset timer keeps resetting)
-      // This allows pokes to accumulate as long as user keeps poking
-      saveTORef.current = window.setTimeout(() => patch({ eyePokes: 0, eyeExpression: "normal" }), 800);
+      }, 900);
     }
   };
   const goSolo = () => {
@@ -3328,17 +3325,7 @@ const powerPlayDiagram = () => (
           animationDelay: `${i * 250}ms`,
         }}
       >
-        <div
-          style={{
-            font: "700 9px 'Outfit',sans-serif",
-            opacity: 0.8,
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
-            color: power.color,
-          }}
-        >
-          {power.label}
-        </div>
+        {power.icon}
       </div>
     ))}
   </div>
