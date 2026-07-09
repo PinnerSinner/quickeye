@@ -1537,7 +1537,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     const tab = st.leaderTab;
     const race = tab === "race";
     const best = bestFor(tab);
-    const serverEntries = props.leaderboards?.[tab] || [];
+    const serverEntries = props.leaderboards?.[tab] || LB[tab] || [];
     const rows = [
       ...serverEntries.map((r: any) => ({ name: r.name || r.n, v: r.score as number | null, you: false })),
       { name: st.playerName || "You", v: best == null ? (race ? null : 0) : best, you: true },
