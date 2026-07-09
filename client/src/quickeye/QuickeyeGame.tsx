@@ -859,7 +859,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   const dimStyle = (revealed: boolean) => ({
     position: "absolute" as const,
     inset: 0,
-    background: "rgba(0,0,0,0.92)",
+    background: "rgba(4,4,8,0.66)",
     opacity: revealed ? 0 : 1,
     transition: "opacity 420ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
     pointerEvents: "none" as const,
@@ -1376,7 +1376,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             height: discSize,
             borderRadius: "50%",
             background: expr === "furious" ? "linear-gradient(135deg, #fff 0%, #fff 70%, #ffcccc 100%)" : "#fff",
-            border: `${Math.max(3, Math.round(discSize * 0.1))}px solid #000`,
+            border: "12px solid #000",
             boxSizing: "border-box",
             display: "flex",
             alignItems: "center",
@@ -1419,8 +1419,8 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             {withPupil && (
               <div
                 style={{
-                  width: Math.round(irisSize * 0.37 * pupilScale),
-                  height: Math.round(irisSize * 0.37 * pupilScale),
+                  width: Math.round(22 * pupilScale),
+                  height: Math.round(22 * pupilScale),
                   borderRadius: "50%",
                   background: "#121212",
                   transition: "width 200ms ease, height 200ms ease",
@@ -2033,7 +2033,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
       )},
       { name: "Halve", key: "3", type: "halve", color: "#F0C020", icon: () => (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-          <path d="M12 4v16M4 12h16" />
+          <path d="M6 10l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )},
     ];
