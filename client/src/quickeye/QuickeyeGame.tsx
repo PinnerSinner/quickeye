@@ -2108,35 +2108,44 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             <div style={{ position: "relative" }}>
               <div
                 ref={hdrRef}
-                style={{ height: 210, background: "#000", overflow: "hidden", cursor: "crosshair", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
+                style={{ height: 320, background: "#000", overflow: "hidden", cursor: "crosshair", position: "relative" }}
+              />
+              <div
+                className="qlogo"
+                onClick={goHome}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 18,
+                  cursor: "pointer",
+                  pointerEvents: "none",
+                }}
               >
-                {[...Array(6)].map((_, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      position: "absolute",
-                      width: Math.random() * 80 + 20,
-                      height: Math.random() * 80 + 20,
-                      borderRadius: "50%",
-                      border: `2px solid ${iris}20`,
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                      opacity: Math.random() * 0.3 + 0.1,
-                      animation: `qe-float${i % 3} ${8 + Math.random() * 6}s ease-in-out infinite`,
-                      zIndex: 1,
-                    }}
-                  />
-                ))}
                 <div
-                  className="qlogo"
-                  onClick={pokeEye}
                   style={{
                     position: "relative",
                     cursor: "pointer",
-                    zIndex: 10,
+                    pointerEvents: "auto",
+                  }}
+                  onClick={pokeEye}
+                  title="Poke the eye"
+                >
+                  {logoMark(150, 58, [56, 19], true, true, true)}
+                </div>
+                <div
+                  style={{
+                    font: "900 72px/1 'Outfit',sans-serif",
+                    textTransform: "uppercase",
+                    letterSpacing: "-3px",
+                    color: "#fff",
+                    textShadow: "5px 5px 0 rgba(0,0,0,0.9)",
                   }}
                 >
-                  {logoMark(140, 56, [56, 16], true, true, true)}
+                  quickeye
                 </div>
               </div>
             </div>
@@ -2833,71 +2842,71 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             style={{
               position: "fixed",
               inset: 0,
-              background: "rgba(0,0,0,0.6)",
+              background: "rgba(6,6,10,0.82)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              zIndex: 10000,
+              zIndex: 40,
             }}
             onClick={cancelQuit}
           >
             <div
               style={{
+                width: 380,
                 background: "#fff",
                 border: "4px solid #000",
-                borderRadius: "8px",
-                padding: "32px",
-                maxWidth: 400,
                 boxShadow: "12px 12px 0 0 #000",
+                padding: "32px 30px",
+                boxSizing: "border-box",
                 textAlign: "center",
               }}
               onClick={(e) => e.stopPropagation()}
             >
               <div
                 style={{
-                  font: "900 24px 'Outfit',sans-serif",
-                  marginBottom: 16,
+                  font: "900 2.2rem 'Outfit',sans-serif",
+                  textTransform: "uppercase",
+                  letterSpacing: "-1px",
                   color: "#121212",
+                  marginBottom: 22,
                 }}
               >
-                Quit Game?
-              </div>
-              <div
-                style={{
-                  font: "500 14px 'Outfit',sans-serif",
-                  color: "#666",
-                  marginBottom: 24,
-                }}
-              >
-                Your progress will be lost. Are you sure?
+                Quit?
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <button
-                  onClick={cancelQuit}
-                  style={{
-                    padding: "12px",
-                    font: "700 14px 'Outfit',sans-serif",
-                    background: "#f0f0f0",
-                    border: "2px solid #000",
-                    cursor: "pointer",
-                    borderRadius: "4px",
-                  }}
-                >
-                  Keep Playing
-                </button>
-                <button
+                  className="qhov"
                   onClick={confirmQuit}
                   style={{
-                    padding: "12px",
-                    font: "700 14px 'Outfit',sans-serif",
+                    padding: "1rem",
+                    font: "900 0.95rem 'Outfit',sans-serif",
                     background: "#D02020",
                     color: "#fff",
-                    border: "2px solid #000",
+                    border: "4px solid #000",
                     cursor: "pointer",
-                    borderRadius: "4px",
+                    textTransform: "uppercase",
+                    letterSpacing: "1px",
+                    boxShadow: "5px 5px 0 0 #000",
                   }}
                 >
-                  Quit
+                  Yes
+                </button>
+                <button
+                  className="qhov"
+                  onClick={cancelQuit}
+                  style={{
+                    padding: "1rem",
+                    font: "900 0.95rem 'Outfit',sans-serif",
+                    background: "#121212",
+                    color: "#fff",
+                    border: "4px solid #000",
+                    cursor: "pointer",
+                    textTransform: "uppercase",
+                    letterSpacing: "1px",
+                    boxShadow: "5px 5px 0 0 #000",
+                  }}
+                >
+                  No
                 </button>
               </div>
             </div>
