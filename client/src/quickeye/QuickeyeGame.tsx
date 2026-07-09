@@ -1644,7 +1644,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               justifyContent: "center",
             }}
           >
-            {gridBox(id, 50, d * (i % 2 ? 18 : -18))}
+            {gridBox(id, 50, 0)}
           </div>
         ))}
       </div>
@@ -1689,6 +1689,8 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                   color: textOn(tcol),
                   boxShadow: "3px 3px 0 0 #121212",
                   animation: "qe-tokenpulse 0.9s ease-in-out infinite",
+                  position: "relative",
+                  zIndex: 1,
                 }}
               >
                 <div style={{ font: "900 16px 'Outfit',sans-serif" }}>★</div>
@@ -1778,9 +1780,11 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                   : isReveal
                   ? "qe-reveal 0.6s ease-in-out infinite"
                   : "none",
+                position: "relative",
+                zIndex: 1,
               }}
             >
-              {gridBox(id, 50, d * (i % 2 ? -18 : 18))}
+              {gridBox(id, 50, 0)}
             </button>
           );
         })}
@@ -2131,7 +2135,10 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                     cursor: "pointer",
                     pointerEvents: "auto",
                   }}
-                  onClick={pokeEye}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    pokeEye();
+                  }}
                   title="Poke the eye"
                 >
                   {logoMark(150, 58, [56, 19], true, true, true)}
