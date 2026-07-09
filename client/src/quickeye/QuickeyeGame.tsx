@@ -653,23 +653,23 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     const prevPokes = stateRef.current.eyePokes;
     let expression: QState["eyeExpression"] = "normal";
 
-    if (newPokes <= 7) {
+    if (newPokes <= 5) {
       audioRef.current?.punch();
       expression = "ouch";
-    } else if (newPokes <= 14) {
+    } else if (newPokes <= 10) {
       audioRef.current?.punch();
       expression = "annoyed";
-    } else if (newPokes <= 21) {
+    } else if (newPokes <= 15) {
       audioRef.current?.punch();
       expression = "angry";
       // Trigger frustrated grunts on entry to angry phase
-      if (prevPokes < 15) {
+      if (prevPokes < 11) {
         audioRef.current?.playFile("/audio/frustrated-grunts.mp3", 0.6);
       }
-    } else if (newPokes <= 28) {
+    } else if (newPokes <= 20) {
       audioRef.current?.punch();
       expression = "furious";
-    } else if (newPokes >= 29) {
+    } else if (newPokes >= 21) {
       // Stop frustrated grunts if still playing
       audioRef.current?.stop("/audio/frustrated-grunts.mp3");
       // Play swear bleep and scream simultaneously
@@ -683,8 +683,8 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     // Clear any existing reset timeout
     clearTimeout(saveTORef.current);
 
-    // Timeline for the easter egg sequence (middle finger triggers at 29 pokes)
-    if (newPokes >= 29) {
+    // Timeline for the easter egg sequence (middle finger triggers at 21 pokes)
+    if (newPokes >= 21) {
       // Middle finger stays up for 3.2s (duration of audio)
       saveTORef.current = window.setTimeout(() => {
         // Eye looks around (recovery animation) for 1.3s
@@ -3372,7 +3372,7 @@ const modeSub: CSSProperties = {
   letterSpacing: "2px",
   opacity: 0.85,
 };
-const modeDesc: CSSProperties = { font: "500 12px/1.5 'Outfit',sans-serif", marginTop: 8, textShadow: "1px 1px 2px rgba(0,0,0,0.5)" };
+const modeDesc: CSSProperties = { font: "500 12px/1.5 'Outfit',sans-serif", marginTop: 8, textShadow: "0 0 4px #000, 0 0 8px rgba(0,0,0,0.7)", WebkitTextStroke: "0.5px rgba(0,0,0,0.6)" };
 function multiCard(bg: string, color: string): CSSProperties {
   return {
     display: "flex",
