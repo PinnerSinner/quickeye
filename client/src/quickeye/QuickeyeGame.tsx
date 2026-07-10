@@ -672,8 +672,8 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     } else if (newPokes <= 20) {
       audioRef.current?.punch();
       expression = "furious";
-    } else if (newPokes === 21) {
-      // Middle finger triggers at exactly 21
+    } else if (newPokes >= 21) {
+      // Middle finger triggers at 21+ clicks
       audioRef.current?.stop("/audio/frustrated-grunts.mp3");
       audioRef.current?.censorBeep();
       audioRef.current?.scream();
