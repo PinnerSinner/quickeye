@@ -109,8 +109,8 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
         ]);
       });
 
-      // Fire off leaderboard saves in the background
-      Promise.all(leaderboardSaves).catch((err) => {
+      // Wait for leaderboard saves to complete
+      await Promise.all(leaderboardSaves).catch((err) => {
         console.error("Failed to save leaderboard entries:", err);
       });
     }
