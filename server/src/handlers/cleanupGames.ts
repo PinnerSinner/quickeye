@@ -1,59 +1,42 @@
 /**
- * cleanupGames — delete all lobby games (emergency clean slate).
- * Removes all games with status "lobby" to wipe the lobbying system clean.
- * WARNING: This is destructive and unrecoverable.
+ * cleanupGames: scheduled lobby tidy-up.
+ *
+ * Triggered by an EventBridge schedule every 15 minutes (see the
+ * CleanupGamesSchedule rule in infra/lib/quickeye-stack.ts). It is NOT a
+ * WebSocket route, so players can't call it from the browser.
+ *
+ * Deletes only lobby games that are stale: older than STALE_LOBBY_SECONDS, or
+ * whose host connection has gone. Live lobbies and games in progress are left
+ * alone. Each delete is conditional on the game still being in the lobby, so a
+ * game that starts mid-cleanup isn't wiped.
  */
 
-import type { APIGatewayProxyWebsocketHandlerV2 } from "aws-lambda";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, ScanCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
+import type { ScheduledHandler } from "aws-lambda";
+import type { GameState } from "@quickeye/shared";
+import { listLobbyGames, liveConnectionIds, deleteLobbyGame } from "../lib/dynamo";
+import { hostConnectionId, isStaleLobbyGame } from "../lib/lobby";
 
-const client = new DynamoDBClient({});
-const doc = DynamoDBDocumentClient.from(client, {
-  marshallOptions: { removeUndefinedValues: true },
-});
+export const handler: ScheduledHandler = async () => {
+  const now = Math.floor(Date.now() / 1000);
+  const games = await listLobbyGames();
 
-const GAMES_TABLE = process.env.GAMES_TABLE!;
+  const hostIds = games
+    .map(hostConnectionId)
+    .filter((id): id is string => id !== null);
+  const live = await liveConnectionIds(hostIds);
 
-export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
-  console.log("CLEANUP INITIATED: Removing all lobby games");
+  const stale = games.filter((g: GameState) => isStaleLobbyGame(g, live, now));
 
-  try {
-    // Scan for all lobby games
-    const res = await doc.send(
-      new ScanCommand({
-        TableName: GAMES_TABLE,
-        FilterExpression: "#status = :lobby",
-        ExpressionAttributeNames: { "#status": "status" },
-        ExpressionAttributeValues: {
-          ":lobby": "lobby",
-        },
-      })
-    );
-
-    const games = res.Items ?? [];
-    console.log(`Found ${games.length} lobby games to delete`);
-
-    // Delete each game
-    let deleted = 0;
-    for (const game of games) {
-      try {
-        await doc.send(
-          new DeleteCommand({
-            TableName: GAMES_TABLE,
-            Key: { gameId: game.gameId },
-          })
-        );
-        deleted++;
-      } catch (err) {
-        console.error(`Failed to delete game ${game.gameId}:`, err);
-      }
+  let deleted = 0;
+  for (const game of stale) {
+    try {
+      if (await deleteLobbyGame(game.gameId)) deleted++;
+    } catch (err) {
+      console.error(`cleanup: failed to delete ${game.gameId}`, err);
     }
-
-    console.log(`Successfully deleted ${deleted}/${games.length} lobby games`);
-    return { statusCode: 200, body: JSON.stringify({ deleted, total: games.length }) };
-  } catch (err) {
-    console.error("Cleanup failed", err);
-    return { statusCode: 500, body: JSON.stringify({ error: "Cleanup failed" }) };
   }
+
+  console.log(
+    `cleanup: ${games.length} lobby games, ${stale.length} stale, ${deleted} deleted`
+  );
 };

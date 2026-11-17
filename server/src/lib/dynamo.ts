@@ -1,11 +1,13 @@
 /**
  * DynamoDB access layer for Quickeye.
  *
- * Two tables (names injected via env vars by the CDK stack):
+ * Three tables (names injected via env vars by the CDK stack; each Lambda
+ * only gets the env vars for the tables it's allowed to touch):
  *  - CONNECTIONS_TABLE: connectionId -> { gameId, playerId } + ttl
  *      Answers "who is this open socket, and what game are they in?"
  *  - GAMES_TABLE: gameId (room code) -> full GameState + ttl
  *      The authoritative game state.
+ *  - LEADERBOARD_TABLE: finished-game scores, written only by the server.
  *
  * We use the DynamoDB Document client so we work with plain JS objects instead
  * of DynamoDB's low-level attribute-value format.
@@ -17,9 +19,11 @@ import {
   GetCommand,
   PutCommand,
   DeleteCommand,
+  QueryCommand,
+  ScanCommand,
+  BatchGetCommand,
 } from "@aws-sdk/lib-dynamodb";
 import type { GameState, GameMode, LeaderboardEntry } from "@quickeye/shared";
-import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 
 const client = new DynamoDBClient({});
 const doc = DynamoDBDocumentClient.from(client, {
@@ -65,6 +69,37 @@ export async function deleteConnection(connectionId: string): Promise<void> {
       Key: { connectionId },
     })
   );
+}
+
+/**
+ * Which of these connection ids still have a row in the Connections table?
+ * BatchGet takes at most 100 keys per call, so we chunk, and we retry any keys
+ * DynamoDB hands back as "unprocessed" (it does that under throttling).
+ */
+export async function liveConnectionIds(ids: string[]): Promise<Set<string>> {
+  const live = new Set<string>();
+  const unique = [...new Set(ids)];
+  for (let i = 0; i < unique.length; i += 100) {
+    let keys: Record<string, unknown>[] | undefined = unique
+      .slice(i, i + 100)
+      .map((connectionId) => ({ connectionId }));
+    for (let attempt = 0; keys && keys.length > 0 && attempt < 5; attempt++) {
+      const res = await doc.send(
+        new BatchGetCommand({
+          RequestItems: {
+            [CONNECTIONS_TABLE]: { Keys: keys, ProjectionExpression: "connectionId" },
+          },
+        })
+      );
+      for (const item of res.Responses?.[CONNECTIONS_TABLE] ?? []) {
+        live.add(item.connectionId as string);
+      }
+      keys = res.UnprocessedKeys?.[CONNECTIONS_TABLE]?.Keys as
+        | Record<string, unknown>[]
+        | undefined;
+    }
+  }
+  return live;
 }
 
 // --- Games ------------------------------------------------------------------
@@ -114,6 +149,50 @@ export async function deleteGame(gameId: string): Promise<void> {
   await doc.send(
     new DeleteCommand({ TableName: GAMES_TABLE, Key: { gameId } })
   );
+}
+
+/**
+ * All lobby games (paginated full scan). Fine for a prototype-sized table.
+ */
+export async function listLobbyGames(): Promise<GameState[]> {
+  const games: GameState[] = [];
+  let startKey: Record<string, unknown> | undefined;
+  do {
+    const res = await doc.send(
+      new ScanCommand({
+        TableName: GAMES_TABLE,
+        FilterExpression: "#status = :lobby",
+        ExpressionAttributeNames: { "#status": "status" },
+        ExpressionAttributeValues: { ":lobby": "lobby" },
+        ExclusiveStartKey: startKey,
+      })
+    );
+    games.push(...((res.Items as GameState[]) ?? []));
+    startKey = res.LastEvaluatedKey;
+  } while (startKey);
+  return games;
+}
+
+/**
+ * Delete a game only if it's still in the lobby. Returns false if it had
+ * started (or vanished) in the meantime, so the cleanup never kills a live game.
+ */
+export async function deleteLobbyGame(gameId: string): Promise<boolean> {
+  try {
+    await doc.send(
+      new DeleteCommand({
+        TableName: GAMES_TABLE,
+        Key: { gameId },
+        ConditionExpression: "#status = :lobby",
+        ExpressionAttributeNames: { "#status": "status" },
+        ExpressionAttributeValues: { ":lobby": "lobby" },
+      })
+    );
+    return true;
+  } catch (err: any) {
+    if (err?.name === "ConditionalCheckFailedException") return false;
+    throw err;
+  }
 }
 
 // --- Leaderboard -----------------------------------------------------------
