@@ -2,13 +2,15 @@
  * queryLeaderboard route handler (action: "queryLeaderboard").
  *
  * Returns ranked leaderboard entries for a specific game mode and period.
- * Results are pre-ranked by the database query (sorted by score DESC).
+ * Results come back already ranked: getLeaderboard reads the ByScore GSI
+ * highest-score-first, so the top N really are the top N.
  */
 
 import type { APIGatewayProxyWebsocketHandlerV2 } from "aws-lambda";
 import type { QueryLeaderboardMessage } from "@quickeye/shared";
 import { sendToConnection, endpointFromEvent } from "../lib/apigw";
 import { getLeaderboard } from "../lib/dynamo";
+import { clampLimit } from "../lib/leaderboard";
 import { ok, fail } from "../lib/util";
 
 export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
@@ -19,9 +21,9 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
     const body = JSON.parse(event.body ?? "{}") as QueryLeaderboardMessage;
     const gameMode = body.gameMode;
     const period = body.period;
-    const limit = body.limit ?? 50;
+    const limit = clampLimit(body.limit);
 
-    if (!gameMode || !period) {
+    if (!gameMode || (period !== "daily" && period !== "all-time")) {
       await sendToConnection(endpoint, connectionId, {
         type: "error",
         code: "INVALID_PARAMS",

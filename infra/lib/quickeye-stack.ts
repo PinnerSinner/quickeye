@@ -2,7 +2,8 @@
  * Quickeye backend stack.
  *
  * Provisions everything needed for real-time multiplayer:
- *   - 3 DynamoDB tables (connections, games, leaderboard)
+ *   - 3 DynamoDB tables (connections, games, leaderboard), with a GSI on games
+ *     (lobby browser) and on leaderboard (top scores)
  *   - 9 WebSocket Lambda handlers (one per route) + 1 scheduled cleanup Lambda
  *   - 1 API Gateway WebSocket API routing messages to those functions
  *   - 1 EventBridge schedule that runs the lobby cleanup every 15 minutes
@@ -65,11 +66,31 @@ export class QuickeyeStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
+    // Lobby browser + cleanup index: "all games with status = lobby, by age".
+    // Lets queryGames/cleanupGames Query instead of Scan the whole table.
+    // Adding a GSI to an existing table is an in-place update (DynamoDB
+    // backfills it in the background), not a replacement.
+    gamesTable.addGlobalSecondaryIndex({
+      indexName: "ByStatus", // must match GAMES_STATUS_INDEX in server/src/lib/dynamo.ts
+      partitionKey: { name: "status", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "createdAt", type: dynamodb.AttributeType.NUMBER },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     const leaderboardTable = new dynamodb.Table(this, "LeaderboardTable", {
       partitionKey: { name: "pk", type: dynamodb.AttributeType.STRING },
       sortKey: { name: "sk", type: dynamodb.AttributeType.NUMBER },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // Top-scores index: same partition (mode + period) but sorted by score,
+    // so "top 50" is one Query reading exactly 50 items, highest first.
+    leaderboardTable.addGlobalSecondaryIndex({
+      indexName: "ByScore", // must match LEADERBOARD_SCORE_INDEX in server/src/lib/leaderboard.ts
+      partitionKey: { name: "pk", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "score", type: dynamodb.AttributeType.NUMBER },
+      projectionType: dynamodb.ProjectionType.ALL,
     });
 
     const tables = {

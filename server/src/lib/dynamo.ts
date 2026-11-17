@@ -24,6 +24,14 @@ import {
   BatchGetCommand,
 } from "@aws-sdk/lib-dynamodb";
 import type { GameState, GameMode, LeaderboardEntry } from "@quickeye/shared";
+import {
+  LEADERBOARD_SCORE_INDEX,
+  clampLimit,
+  leaderboardPk,
+  utcDate,
+  type LeaderboardItem,
+  type LeaderboardPeriod,
+} from "./leaderboard";
 
 const client = new DynamoDBClient({});
 const doc = DynamoDBDocumentClient.from(client, {
@@ -151,19 +159,37 @@ export async function deleteGame(gameId: string): Promise<void> {
   );
 }
 
+/** GSI on the Games table: partition key `status`, sort key `createdAt`. */
+export const GAMES_STATUS_INDEX = "ByStatus";
+
 /**
- * All lobby games (paginated full scan). Fine for a prototype-sized table.
+ * Lobby games, read from the ByStatus GSI rather than scanning the whole
+ * table. Pass `sinceSeconds` to only fetch games created at or after that time.
+ *
+ * Prototype note: every lobby game shares the one "lobby" partition in this
+ * index. That's fine at our scale; at real scale you'd shard it.
  */
-export async function listLobbyGames(): Promise<GameState[]> {
+export async function listLobbyGames(sinceSeconds?: number): Promise<GameState[]> {
   const games: GameState[] = [];
   let startKey: Record<string, unknown> | undefined;
   do {
     const res = await doc.send(
-      new ScanCommand({
+      new QueryCommand({
         TableName: GAMES_TABLE,
-        FilterExpression: "#status = :lobby",
-        ExpressionAttributeNames: { "#status": "status" },
-        ExpressionAttributeValues: { ":lobby": "lobby" },
+        IndexName: GAMES_STATUS_INDEX,
+        KeyConditionExpression:
+          sinceSeconds === undefined
+            ? "#status = :lobby"
+            : "#status = :lobby AND #createdAt >= :since",
+        ExpressionAttributeNames:
+          sinceSeconds === undefined
+            ? { "#status": "status" }
+            : { "#status": "status", "#createdAt": "createdAt" },
+        ExpressionAttributeValues:
+          sinceSeconds === undefined
+            ? { ":lobby": "lobby" }
+            : { ":lobby": "lobby", ":since": sinceSeconds },
+        ScanIndexForward: false,
         ExclusiveStartKey: startKey,
       })
     );
@@ -196,63 +222,40 @@ export async function deleteLobbyGame(gameId: string): Promise<boolean> {
 }
 
 // --- Leaderboard -----------------------------------------------------------
+// Key layout and the "why" behind it live in ./leaderboard.ts.
 
-/**
- * Save a score to the leaderboard.
- * Stores entry with gameMode#period as partition key.
- * Daily entries use date in the key, all-time entries use consistent key.
- */
-export async function putLeaderboardEntry(
-  entry: LeaderboardEntry
-): Promise<void> {
-  const period = entry.date; // Use date as additional key component for daily
-  const pk =
-    entry.date === "all-time"
-      ? `${entry.gameMode}#all-time`
-      : `${entry.gameMode}#daily#${entry.date}`;
-
-  await doc.send(
-    new PutCommand({
-      TableName: LEADERBOARD_TABLE,
-      Item: {
-        pk,
-        sk: entry.timestamp,
-        ...entry,
-      },
-    })
+/** Write leaderboard rows built by leaderboardItemsForGame (server-side only). */
+export async function putLeaderboardItems(items: LeaderboardItem[]): Promise<void> {
+  await Promise.all(
+    items.map((Item) => doc.send(new PutCommand({ TableName: LEADERBOARD_TABLE, Item })))
   );
 }
 
 /**
- * Query leaderboard entries for a game mode and period.
- * Returns top N entries sorted by score (highest first).
+ * The genuine top N scores for a game mode and period, highest first.
+ *
+ * Reads the ByScore GSI (sort key = score) in descending order, so DynamoDB
+ * hands back exactly the top N and nothing else. Previously this read the N*2
+ * NEWEST rows by timestamp and sorted those, so an old high score dropped off
+ * the "top" list as soon as enough newer games were played.
  */
 export async function getLeaderboard(
   gameMode: GameMode,
-  period: "daily" | "all-time",
-  limit: number = 50
+  period: LeaderboardPeriod,
+  limit: number = 50,
+  nowMs: number = Date.now()
 ): Promise<LeaderboardEntry[]> {
-  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-  const pk =
-    period === "all-time"
-      ? `${gameMode}#all-time`
-      : `${gameMode}#daily#${today}`;
-
   const res = await doc.send(
     new QueryCommand({
       TableName: LEADERBOARD_TABLE,
+      IndexName: LEADERBOARD_SCORE_INDEX,
       KeyConditionExpression: "pk = :pk",
-      ExpressionAttributeValues: { ":pk": pk },
-      Limit: limit * 2, // Get extra in case of duplicates
-      ScanIndexForward: false, // DESC by timestamp (newest first)
+      ExpressionAttributeValues: { ":pk": leaderboardPk(gameMode, period, utcDate(nowMs)) },
+      ScanIndexForward: false, // highest score first
+      Limit: clampLimit(limit),
     })
   );
 
-  const items = (res.Items as (LeaderboardEntry & { pk: string; sk: number })[]) ?? [];
-
-  // Sort by score DESC and return top N
-  return items
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit)
-    .map(({ pk, sk, ...entry }) => entry);
+  const items = (res.Items as LeaderboardItem[]) ?? [];
+  return items.map(({ pk, sk, ...entry }) => entry);
 }

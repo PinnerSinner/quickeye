@@ -1,71 +1,39 @@
 /**
  * queryGames route handler (action: "queryGames").
  *
- * Returns a list of available lobby games that players can join.
- * Scans the GAMES_TABLE for all games with status "lobby".
+ * Returns the lobby browser list: joinable multiplayer games whose host is
+ * still connected. The rules for what counts as joinable live in
+ * lib/lobby.ts (lobbyListing) so they're unit tested.
+ *
+ * Reads the Games table's ByStatus GSI (status = "lobby", createdAt within the
+ * listing window) rather than scanning the whole table, then double-checks
+ * each host's socket still exists in the Connections table.
  */
 
 import type { APIGatewayProxyWebsocketHandlerV2 } from "aws-lambda";
-import type { GameState } from "@quickeye/shared";
+import { GAME_CONFIG } from "@quickeye/shared";
 import { sendToConnection, endpointFromEvent } from "../lib/apigw";
+import { listLobbyGames, liveConnectionIds } from "../lib/dynamo";
+import { LOBBY_LISTING_WINDOW_SECONDS, hostConnectionId, lobbyListing } from "../lib/lobby";
 import { ok, fail } from "../lib/util";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
-
-const client = new DynamoDBClient({});
-const doc = DynamoDBDocumentClient.from(client, {
-  marshallOptions: { removeUndefinedValues: true },
-});
-
-const GAMES_TABLE = process.env.GAMES_TABLE!;
 
 export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
   const connectionId = event.requestContext.connectionId;
   const endpoint = endpointFromEvent(event.requestContext);
 
   try {
-    // Scan for all lobby games (skip finished/playing games)
     const now = Math.floor(Date.now() / 1000);
-    const res = await doc.send(
-      new ScanCommand({
-        TableName: GAMES_TABLE,
-        FilterExpression: "#status = :lobby AND #created > :recent AND #gtype = :mp",
-        ExpressionAttributeNames: { "#status": "status", "#created": "createdAt", "#gtype": "gameType" },
-        ExpressionAttributeValues: {
-          ":lobby": "lobby",
-          ":recent": now - 30, // Last 30 seconds only
-          ":mp": "multiplayer",
-        },
-      })
-    );
+    const games = await listLobbyGames(now - LOBBY_LISTING_WINDOW_SECONDS);
 
-    const games = (res.Items as GameState[]) ?? [];
-
-    // Extract summary info (gameId, host name, player count)
-    // Only include games where:
-    // 1. Host is still connected (connectionId is not null)
-    // 2. At least one other player can join
-    const gameSummaries = games
-      .filter((game) => {
-        const host = game.players.find((p) => p.playerId === game.hostId);
-        return (
-          host &&
-          host.connectionId !== null && // Host must be connected
-          game.players.length > 0 // At least 1 player (the host)
-        );
-      })
-      .map((game) => ({
-        gameId: game.gameId,
-        host: game.players[0].name,
-        playerCount: game.players.length,
-        gameMode: game.gameMode,
-      }));
+    const hostIds = games
+      .map(hostConnectionId)
+      .filter((id): id is string => id !== null);
+    const live = await liveConnectionIds(hostIds);
 
     await sendToConnection(endpoint, connectionId, {
       type: "gamesList",
-      games: gameSummaries,
+      games: lobbyListing(games, live, now, GAME_CONFIG.maxPlayers),
     });
-
     return ok();
   } catch (err) {
     console.error("queryGames failed", err);

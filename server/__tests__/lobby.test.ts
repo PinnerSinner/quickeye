@@ -4,6 +4,8 @@ import {
   hostConnectionId,
   isHostConnected,
   isStaleLobbyGame,
+  LOBBY_LISTING_WINDOW_SECONDS,
+  lobbyListing,
 } from "../src/lib/lobby";
 
 const NOW = 1_800_000_000;
@@ -73,5 +75,45 @@ describe("isStaleLobbyGame", () => {
     const old = NOW - 10 * STALE_LOBBY_SECONDS;
     expect(isStaleLobbyGame(game({ status: "playing", createdAt: old }), live(), NOW)).toBe(false);
     expect(isStaleLobbyGame(game({ status: "finished", createdAt: old }), live(), NOW)).toBe(false);
+  });
+});
+
+describe("lobbyListing", () => {
+  const MAX = 6;
+
+  it("lists a lobby that's been waiting well over 30 seconds (the old cut-off)", () => {
+    const g = game({ createdAt: NOW - 5 * 60 });
+    expect(lobbyListing([g], live("conn-host"), NOW, MAX).map((x) => x.gameId)).toEqual(["ABCD"]);
+  });
+
+  it("drops lobbies older than the listing window", () => {
+    const g = game({ createdAt: NOW - LOBBY_LISTING_WINDOW_SECONDS - 1 });
+    expect(lobbyListing([g], live("conn-host"), NOW, MAX)).toEqual([]);
+  });
+
+  it("drops lobbies whose host has disconnected", () => {
+    expect(lobbyListing([game()], live("conn-guest"), NOW, MAX)).toEqual([]);
+  });
+
+  it("drops full, started and non-multiplayer games", () => {
+    const full = game({
+      gameId: "FULL",
+      players: [player("host", "conn-host"), ...[1, 2, 3, 4, 5].map((n) => player(`p${n}`, `c${n}`))],
+    });
+    const started = game({ gameId: "PLAY", status: "playing" });
+    const solo = game({ gameId: "SOLO", gameType: "solo" });
+    expect(lobbyListing([full, started, solo], live("conn-host"), NOW, MAX)).toEqual([]);
+  });
+
+  it("names the actual host and sorts newest first", () => {
+    const older = game({
+      gameId: "OLDR",
+      createdAt: NOW - 300,
+      players: [player("guest", "conn-guest"), { ...player("host", "conn-host"), name: "Marco" }],
+    });
+    const newer = game({ gameId: "NEWR", createdAt: NOW - 10 });
+    const out = lobbyListing([older, newer], live("conn-host"), NOW, MAX);
+    expect(out.map((x) => x.gameId)).toEqual(["NEWR", "OLDR"]);
+    expect(out[1]).toEqual({ gameId: "OLDR", host: "Marco", playerCount: 2, gameMode: "time-attack-60" });
   });
 });

@@ -14,8 +14,9 @@
  */
 
 import type { APIGatewayProxyWebsocketHandlerV2 } from "aws-lambda";
-import { applyMatch, type SubmitMatchMessage, type LeaderboardEntry } from "@quickeye/shared";
-import { getConnection, getGame, putGameIfCenterUnchanged, putLeaderboardEntry } from "../lib/dynamo";
+import { applyMatch, type SubmitMatchMessage } from "@quickeye/shared";
+import { getConnection, getGame, putGameIfCenterUnchanged, putLeaderboardItems } from "../lib/dynamo";
+import { leaderboardItemsForGame } from "../lib/leaderboard";
 import { sendToConnection, broadcast, endpointFromEvent } from "../lib/apigw";
 import { ok, fail } from "../lib/util";
 
@@ -79,40 +80,17 @@ export const handler: APIGatewayProxyWebsocketHandlerV2 = async (event) => {
       { type: "stateUpdate", state: outcome.state }
     );
 
-    // Save scores to global leaderboard when game ends
+    // Game over: record final scores on the leaderboard. The scores come from
+    // the server's own authoritative state (outcome.state), never from the
+    // client, and this is the ONLY place leaderboard rows are written.
+    // Only the request that actually ended the game gets here, because the
+    // optimistic lock above lets exactly one final match win.
     if (outcome.gameOver) {
-      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-      const timestamp = Math.floor(Date.now() / 1000);
-      const gameMode = outcome.state.gameMode || "time-attack-60";
-
-      // Save each player's score to daily and all-time leaderboards
-      const leaderboardSaves = outcome.state.players.map((player) => {
-        const dailyEntry: LeaderboardEntry = {
-          playerId: player.playerId,
-          playerName: player.name,
-          score: player.score,
-          gameMode,
-          timestamp,
-          date: today,
-        };
-        const allTimeEntry: LeaderboardEntry = {
-          playerId: player.playerId,
-          playerName: player.name,
-          score: player.score,
-          gameMode,
-          timestamp,
-          date: "all-time",
-        };
-        return Promise.all([
-          putLeaderboardEntry(dailyEntry),
-          putLeaderboardEntry(allTimeEntry),
-        ]);
-      });
-
-      // Wait for leaderboard saves to complete
-      await Promise.all(leaderboardSaves).catch((err) => {
+      try {
+        await putLeaderboardItems(leaderboardItemsForGame(outcome.state, Date.now()));
+      } catch (err) {
         console.error("Failed to save leaderboard entries:", err);
-      });
+      }
     }
 
     return ok();

@@ -44,3 +44,46 @@ export function isStaleLobbyGame(
   const tooOld = game.createdAt < nowSeconds - STALE_LOBBY_SECONDS;
   return tooOld || !isHostConnected(game, liveConnectionIds);
 }
+
+/**
+ * How far back the lobby browser looks. Deliberately the same as the stale
+ * threshold: anything older is about to be cleaned up anyway. The real
+ * "is this lobby alive?" signal is the host-connected check, not the age.
+ */
+export const LOBBY_LISTING_WINDOW_SECONDS = STALE_LOBBY_SECONDS;
+
+export interface LobbySummary {
+  gameId: string;
+  host: string;
+  playerCount: number;
+  gameMode: GameState["gameMode"];
+}
+
+/**
+ * Turn raw lobby games into the list the lobby browser shows: joinable
+ * multiplayer games, inside the listing window, host still connected, not
+ * full. Newest first.
+ */
+export function lobbyListing(
+  games: GameState[],
+  liveConnectionIds: Set<string>,
+  nowSeconds: number,
+  maxPlayers: number
+): LobbySummary[] {
+  return games
+    .filter(
+      (g) =>
+        g.status === "lobby" &&
+        g.gameType === "multiplayer" &&
+        g.createdAt >= nowSeconds - LOBBY_LISTING_WINDOW_SECONDS &&
+        g.players.length < maxPlayers &&
+        isHostConnected(g, liveConnectionIds)
+    )
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .map((g) => ({
+      gameId: g.gameId,
+      host: g.players.find((p) => p.playerId === g.hostId)?.name ?? "Host",
+      playerCount: g.players.length,
+      gameMode: g.gameMode,
+    }));
+}
