@@ -23,7 +23,6 @@ import {
   IRIS_CYCLE,
   LB,
   MODE_LABEL,
-  OPP_POOL,
   PALETTE,
   POWER_COL,
   SCALE,
@@ -39,7 +38,7 @@ import {
   type PowerType,
   type Round,
 } from "./glyphs";
-import { drawShape, styleHeaderShape } from "./canvas";
+import { styleHeaderShape } from "./canvas";
 import { QuickeyeAudio } from "./audio";
 import { containsProfanity } from "@quickeye/shared";
 import { MultiplayerBoard, type MatchFeedback } from "./MultiplayerBoard";
@@ -252,7 +251,6 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   let _bgAnimId = 0;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overRef = useRef<HTMLCanvasElement | null>(null);
-  const eyeRef = useRef<HTMLDivElement | null>(null);
 
   // audio
   const audioRef = useRef<QuickeyeAudio>();
@@ -598,9 +596,6 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     audioRef.current?.setBGMVolume(0.4);
   };
 
-  const stopMusic = () => {
-    audioRef.current?.stopBGM();
-  };
 
   // ---------- brick animations ----------
   const genBricks = () => {
@@ -687,7 +682,6 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
       expression = "furious";
     } else if (newPokes >= 21) {
       // Middle finger triggers at 21+ clicks
-      audioRef.current?.stop("/audio/frustrated-grunts.mp3");
       audioRef.current?.censorBeep();
       audioRef.current?.scream();
       expression = "middle-finger";
@@ -742,9 +736,6 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     props.onLeaveMultiplayer?.();
     patch({ isMultiplayer: false, gameId: null, playerId: null });
     navigate(to, extra);
-  };
-  const goLobby = () => {
-    navigate("lobby");
   };
   const goLeaders = () => {
     navigate("leaderboard");
@@ -1030,7 +1021,6 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     audioRef.current?.ensure();
     stopTimers();
     t0Ref.current = Date.now();
-    const isRace = mode === "race";
     patch({
       view: "playing",
       mode,
@@ -1335,7 +1325,6 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   ) => {
     const expr = st.eyeExpression;
     const isMiddleFinger = expr === "middle-finger";
-    const isLaughing = expr === "laughing";
     const isShaking = expr === "annoyed" || expr === "angry" || expr === "furious";
 
     if (isMiddleFinger) {
@@ -1664,7 +1653,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     </div>
   );
 
-  const centerGrid = (d: number) => {
+  const centerGrid = (_d: number) => {
     const r = st.round;
     const sc = 1;
     return (
@@ -1696,7 +1685,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     );
   };
 
-  const playerGrid = (d: number, revealActive: boolean) => {
+  const playerGrid = (_d: number, revealActive: boolean) => {
     const r = st.round;
     const { matchedId, wrongId, cullIdx, popIdx, tokenUsed } = st;
     const sc = 1;
@@ -2114,7 +2103,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 gap: 4,
               }}
             >
-              {p.type === "pop" ? p.icon(active) : p.icon()}
+              {p.icon(active)}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
                 <div style={{ font: "700 11px 'Outfit',sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
                   {p.name}
@@ -3100,7 +3089,6 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 fontFamily: "'Outfit', sans-serif",
                 color: COUNTDOWN_COLORS[st.tutorialStep],
                 WebkitTextStroke: "6px #000",
-                textStroke: "6px #000",
                 filter: `drop-shadow(10px 10px 0 #000000cc) brightness(${st.tutorialStep === 0 ? 0.8 : st.tutorialStep === 1 ? 0.9 : st.tutorialStep === 2 ? 1 : 1.2})`,
                 animation: `${st.tutorialStep % 2 === 0 ? "qe-countdown-pop" : "qe-countdown-pop-alt"} 0.6s cubic-bezier(.34,1.6,.5,1)`,
                 zIndex: 10,
@@ -3520,12 +3508,6 @@ const modeTitle: CSSProperties = {
   textTransform: "uppercase",
   letterSpacing: "0px",
   marginTop: 8,
-};
-const modeSub: CSSProperties = {
-  marginTop: 4,
-  font: "700 0.8rem 'Courier New', monospace",
-  letterSpacing: "2px",
-  opacity: 0.85,
 };
 const modeDesc: CSSProperties = { font: "500 12px/1.5 'Outfit',sans-serif", marginTop: 8, textShadow: "0 0 4px #000, 0 0 8px rgba(0,0,0,0.7)", WebkitTextStroke: "0.5px rgba(0,0,0,0.6)" };
 function multiCard(bg: string, color: string): CSSProperties {

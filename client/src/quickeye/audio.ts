@@ -241,24 +241,6 @@ export class QuickeyeAudio {
     if (this.bgm) this.bgm.volume = Math.max(0, Math.min(1, vol));
   }
 
-  /** Countdown beep tones (3, 2, 1). Each has a distinct pitch. */
-  countdownBeep(num: 3 | 2 | 1): void {
-    const a = this.ctx;
-    if (!a || !this.enabled) return;
-    const t = a.currentTime;
-    const freqs: Record<3 | 2 | 1, number> = { 3: 440, 2: 523, 1: 659 };
-    const freq = freqs[num];
-    const o = a.createOscillator();
-    const g = a.createGain();
-    o.type = "sine";
-    o.frequency.setValueAtTime(freq, t);
-    g.gain.setValueAtTime(0.4, t);
-    g.gain.exponentialRampToValueAtTime(0.05, t + 0.15);
-    o.connect(g).connect(a.destination);
-    o.start(t);
-    o.stop(t + 0.15);
-  }
-
   /** Victory chord for GO phase (3-note major chord). */
   countdownGo(): void {
     const a = this.ctx;

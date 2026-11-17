@@ -33,6 +33,8 @@ function makeLobby(playerCount: number): GameState {
     players,
     centerCardId: null,
     drawPile: [],
+    gameMode: "time-attack-60",
+    gameType: "multiplayer",
     createdAt: 0,
     ttl: 0,
   };

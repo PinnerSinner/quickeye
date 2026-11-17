@@ -1,0 +1,41 @@
+# Runs on every push to main and every pull request into main.
+# If any step fails, the commit/PR gets a red cross on GitHub.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # lets you run it by hand from the Actions tab
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # client and server import the compiled @quickeye/shared package.
+      - name: Build shared
+        run: npm -w shared run build
+
+      - name: Typecheck server
+        run: npx tsc -p server/tsconfig.json --noEmit
+
+      - name: Typecheck client
+        run: npm -w client run type-check
+
+      - name: Typecheck infra
+        working-directory: infra
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npm test
