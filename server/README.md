@@ -1,78 +1,104 @@
 # @quickeye/server
 
-Lambda handlers and utilities for the Quickeye WebSocket API backend.
+Lambda handlers and helpers for the Quickeye WebSocket API backend.
 
 ## Structure
 
 ```
 src/
-  handlers/          — Lambda entry points (one per WebSocket route)
-    connect.ts       — $connect route (new socket)
-    disconnect.ts    — $disconnect route (socket closed)
-    default.ts       — $default route (unknown action)
-    createGame.ts    — action: "createGame"
-    joinGame.ts      — action: "joinGame"
-    startGame.ts     — action: "startGame"
-    submitMatch.ts   — action: "submitMatch" (authoritative anti-cheat)
+  handlers/            Lambda entry points
+    connect.ts         $connect: new socket opened, record it
+    disconnect.ts      $disconnect: socket closed; host leaving a lobby deletes it,
+                       otherwise the player is marked disconnected
+    default.ts         $default: unknown action, replies UNKNOWN_ACTION
+    createGame.ts      action "createGame": new room, caller is host
+    joinGame.ts        action "joinGame": join a lobby by room code
+    startGame.ts       action "startGame": host only, deals cards
+    submitMatch.ts     action "submitMatch": authoritative match check (anti-cheat);
+                       at game over it writes the leaderboard rows
+    queryGames.ts      action "queryGames": lobby browser list
+    queryLeaderboard.ts action "queryLeaderboard": top N scores, highest first
+    cleanupGames.ts    NOT a WebSocket route. EventBridge runs it every 15 min
   lib/
-    dynamo.ts        — DynamoDB Document client access + optimistic locking
-    apigw.ts         — API Gateway Management API for pushing to clients
-    util.ts          — helpers (response codes, TTL, random ids)
+    dynamo.ts          DynamoDB access (tables, GSIs, optimistic locking)
+    apigw.ts           pushes messages to clients via the Management API
+    lobby.ts           pure lobby rules: what's listed, what's stale
+    leaderboard.ts     pure leaderboard rules: row building, keys, limits
+    util.ts            response codes, TTL, random ids
 
-test-client.ts       — Local test script (see below)
+local/devServer.ts     the whole backend locally, no AWS needed (see below)
+test-client.ts         smoke test against a live or local backend
+__tests__/             unit tests (run from the repo root with npm test)
 ```
+
+## How cleanupGames is triggered
+
+It's wired to an EventBridge rule (`CleanupGamesSchedule` in
+`infra/lib/quickeye-stack.ts`) that fires every 15 minutes. It is deliberately
+not a WebSocket route: anything routed on the API can be sent by anyone with the
+wss:// URL straight from browser devtools, and a cleanup job has no business
+being callable like that. Only EventBridge has permission to invoke it.
+
+Each run deletes only lobby games that are stale, meaning older than
+`STALE_LOBBY_SECONDS` (10 minutes) or whose host's socket is gone. Games in
+progress are never touched; DynamoDB TTL expires those after 6 hours. Deletes are
+conditional on the game still being in the lobby, so a game that starts during
+the cleanup survives.
+
+To run it by hand in AWS, use "Test" on the CleanupGamesFn function in the Lambda
+console (any test event will do). Locally, see below.
 
 ## Building
 
 ```bash
-npm run build       # TypeScript → JavaScript
-npm run typecheck   # Check types without emitting
+npm run build       # TypeScript -> JavaScript
+npm run typecheck   # check types without emitting
 ```
 
-## Testing with the local client
+In AWS the handlers are bundled by CDK (esbuild), which also pulls in
+`@quickeye/shared`.
 
-Once you've deployed the stack (`cdk deploy` in `/infra`), you'll get a `wss://` URL.
-Use the test client to verify the full flow:
+## Running the backend locally
 
 ```bash
-npm install         # (one-time; includes ws + ts-node)
-npm run test-client wss://your-api-gateway-url/prod
+npm -w server run dev:local
 ```
 
-The script:
-1. Simulates two players (Alice and Bob)
-2. A creates a game
-3. B joins using the code
-4. A starts the game
-5. A submits a match attempt
-6. Prints results
+That starts the real handlers behind a local WebSocket server on
+`ws://localhost:3001`, with an in-memory DynamoDB (dynalite) set up with the
+same tables and indexes as the CDK stack. Point the client at it:
 
-Example output:
+```bash
+cd client && VITE_WSS_URL=ws://localhost:3001 npx vite
 ```
-[Alice] connected
-[Bob] connected
-[SETUP] connecting players...
-[TEST] Player A creates a game
-[Alice] created game QCKE, playerId=abc123...
-[TEST] Player B joins game QCKE
-[Bob] joined game QCKE, playerId=def456...
-[TEST] Player A starts the game
-[Alice] game started, dealing done. Your card: 5, center: 42
-[Bob] game started. Your card: 13, center: 42
-[TEST] Player A submits a match attempt
-[Alice] CORRECT! symbolId=0, score now 1. Game over: false
-[SUCCESS] test flow completed without errors
+
+Run the scheduled cleanup on demand with
+`curl -X POST http://localhost:3002/_cleanup`. Data disappears when you stop the
+server.
+
+## Smoke test
+
+```bash
+npm -w server run test-client wss://your-api-id.execute-api.us-east-1.amazonaws.com/prod
+npm -w server run test-client ws://localhost:3001 -- --full
 ```
+
+It plays as two players, Alice and Bob, and checks: the game shows in the lobby
+browser, joining and starting work, a bogus symbol is rejected, the real match
+(worked out from the shared deck) is accepted, and `cleanupGames` can't be called
+over the socket. `--full` also plays to game over and checks both final scores
+are on the leaderboard in the right order. On the live stack that puts Alice and
+Bob on the real leaderboard, so leave `--full` off there unless you want that.
 
 ## Notes on the handlers
 
-- **`submitMatch` is the anti-cheat path**: the client sends only a `symbolId`, and
-  the server re-derives both cards and re-validates the match using the shared
-  `applyMatch` logic. The client's guess is only a hint — trust the server.
+- **`submitMatch` is the anti-cheat path**: the client sends only a `symbolId`;
+  the server re-derives both cards and re-validates using the shared `applyMatch`.
+- **Leaderboard scores are written only by the server**, from its own game state
+  at game over. There is no client message that carries a score.
 - **Optimistic locking**: two simultaneous correct matches can't both advance the
-  game. The first write succeeds; the second is told "too slow".
-- **Broadcasting**: all handlers that change state use `broadcast` to push updates
-  to every player, so the UI stays in sync without polling.
-- **Known gaps** (prototype):
-  - Reconnection handling not yet implemented
-  - No explicit error recovery (assumes transient errors are rare with Lambda)
+  game. The first write wins; the second is told it wasn't correct.
+- **Broadcasting**: handlers that change state push the new state to every player.
+- **Known gaps**: no reconnection (a dropped socket can't rejoin its game), no
+  explicit `leaveGame` action, and the full state, draw pile included, is
+  broadcast. See PROGRESS.md.

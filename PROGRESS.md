@@ -9,12 +9,132 @@ See [CLAUDE.md](CLAUDE.md) for the project brief and locked-in decisions.
 
 | Area | State |
 | --- | --- |
-| Deck generation (`/shared`) | ✅ Done, 15 tests |
-| Game logic — deal/match/scoring (`/shared`) | ✅ Done, 10 tests |
-| Real-time backend (`/server` + `/infra`) | ✅ Deployed to AWS; test client validates |
-| Frontend UI (`/client`) | ✅ Built; ready for Amplify deployment |
+| Deck generation (`/shared`) | ✅ Done, tested |
+| Game logic: deal/match/scoring (`/shared`) | ✅ Done, tested |
+| Real-time backend (`/server` + `/infra`) | ⚠️ Phase 4 version live; Phase 5 changes committed but **not yet deployed** |
+| Frontend UI (`/client`) | ✅ Multiplayer flow works end to end against the local backend |
+| CI | ✅ GitHub Actions on pushes/PRs to main |
 
-**Total tests passing: 25. Backend live: wss://gkj3douxjj.execute-api.us-east-1.amazonaws.com/prod**
+**Tests passing: 47 (4 suites). Backend: wss://gkj3douxjj.execute-api.us-east-1.amazonaws.com/prod**
+
+---
+
+## Phase 5: Lobby, leaderboard and multiplayer made real
+
+Branch `claude/quickeye-lobby-live-0ix0ei`. The goal was the multiplayer lobby
+working end to end on the live site. All the code is done and tested; the
+deploy still has to be run from a machine with AWS credentials (see "To
+deploy" below).
+
+### What changed
+
+**Infra (`infra/lib/quickeye-stack.ts`)**
+- Least-privilege IAM: each Lambda gets only the table env vars and
+  read/write grants it actually uses, instead of read/write on everything.
+- All three tables are `RemovalPolicy.RETAIN` (they were `DESTROY`). Construct
+  ids are unchanged, so this is a metadata change, not a replacement.
+- New GSIs, both in-place adds (primary keys untouched):
+  - Games `ByStatus` (status + createdAt): lobby browser and cleanup Query
+    this instead of scanning the whole table.
+  - Leaderboard `ByScore` (pk + score): gives the genuine top N directly.
+- `cleanupGames` runs on an EventBridge schedule every 15 minutes. It is
+  deliberately **not** a WebSocket route, so nobody can fire it from devtools.
+- Lambdas moved from Node 20 (end of life, Lambda blocks updates) to Node 22.
+
+**Server**
+- `queryGames`: the old filter only showed games created in the last 30
+  seconds. Now uses `LOBBY_LISTING_WINDOW_SECONDS` (10 min) and leans on a
+  proper host-still-connected check (host's socket must still exist in the
+  Connections table). Shows the real host name and skips full games.
+- `cleanupGames`: only deletes lobby games that are stale (older than 10 min,
+  or host gone), with a conditional delete so a game that starts mid-cleanup
+  is never wiped. It used to delete every lobby game.
+- Leaderboard read: was reading the newest 2N rows and sorting them, so old
+  high scores dropped off. Now queries `ByScore` highest first.
+- Leaderboard write: still server-side only, from authoritative game state at
+  game over (the client never sends a score). Fixed a real bug: every player
+  in a game got the same sort key, so they overwrote each other and only one
+  score per game survived. Bots and zero scores are no longer recorded.
+- Pure rules pulled into `lib/lobby.ts` and `lib/leaderboard.ts` with tests.
+
+**Client**
+- Online/offline badge on every screen (Online, Connecting, Reconnecting,
+  or "Offline · solo & bots only" when the build has no `VITE_WSS_URL`). The
+  multiplayer menu explains itself and disables when offline.
+- New live multiplayer board drawn purely from server state, with a
+  57-symbol glyph set (the old one only had 35, so it couldn't show the real
+  deck). Solo play is untouched.
+- New "Browse Games" lobby browser.
+- Fixed: host never saw the Start button; server errors were never shown;
+  leaderboard names were blank; leaving a lobby left a ghost game behind.
+- WebSocket hook auto-reconnects with backoff.
+
+**Tooling**
+- `npm -w server run dev:local`: the whole backend locally (real handlers,
+  in-memory DynamoDB via dynalite, fake API Gateway). No AWS needed.
+- `test-client` rewritten as a proper smoke test (see below).
+- `.github/workflows/ci.yml`: install, build shared, typecheck server/client/
+  infra, `npm test`. Fixed the pre-existing type errors so it starts green.
+
+![Live multiplayer board](screenshots/multiplayer-board.png)
+
+### Current tables
+
+| Table | Key | GSI | Notes |
+| --- | --- | --- | --- |
+| Connections | `connectionId` | none | TTL `ttl`, RETAIN |
+| Games | `gameId` | `ByStatus` (status, createdAt) | TTL `ttl`, RETAIN |
+| Leaderboard | `pk` (S), `sk` (N) | `ByScore` (pk, score) | RETAIN. pk = `<mode>#all-time` or `<mode>#daily#YYYY-MM-DD`; sk = millis * 1000 + offset |
+
+### Current routes
+
+| Trigger | Handler | Tables |
+| --- | --- | --- |
+| `$connect` | connect | Connections (write) |
+| `$disconnect` | disconnect | Connections, Games (read/write) |
+| `$default` | default | none |
+| `createGame` | createGame | Games (rw), Connections (write) |
+| `joinGame` | joinGame | Games (rw), Connections (write) |
+| `startGame` | startGame | Games (rw), Connections (read) |
+| `submitMatch` | submitMatch | Games (rw), Connections (read), Leaderboard (write) |
+| `queryGames` | queryGames | Games (read), Connections (read) |
+| `queryLeaderboard` | queryLeaderboard | Leaderboard (read) |
+| EventBridge, every 15 min | cleanupGames | Games (rw), Connections (read) |
+
+### Verified
+- `npm test`: 47 passing. All typechecks clean. `cdk synth` clean.
+- Against the local backend: `test-client --full` passes every check, and a
+  two-browser-tab Playwright run did create, appear in the other tab's lobby,
+  join, start, wrong pick rejected, 55 rounds to game over, both scores on the
+  leaderboard. Also checked offline mode and a dropped connection.
+- **Not yet verified against AWS**, because it hasn't been deployed.
+
+### To deploy
+```bash
+cd infra
+npx cdk diff      # read it first: no table/API should be replaced or removed
+npx cdk deploy
+npm -w server run test-client wss://gkj3douxjj.execute-api.us-east-1.amazonaws.com/prod
+```
+Leave `--full` off on the live stack unless you're happy for "Alice" and
+"Bob" to land on the real leaderboard.
+
+### Known gaps
+- **Reconnection**: a dropped socket comes back with a new connectionId and
+  isn't re-linked to your game. The client now tells you and drops you out
+  cleanly, but you can't rejoin. Next step: a `rejoinGame` action taking
+  `{ gameId, playerId }` (playerId kept in sessionStorage), which would need a
+  stronger random playerId first since it would act as a secret.
+- **No `leaveGame` action**: leaving works by reopening the socket so
+  `$disconnect` tidies up. A non-host who leaves a lobby still counts towards
+  the player total (shown as "left").
+- **Full state is broadcast**, including the draw pile order, so a determined
+  cheat could see upcoming cards. Strip it to a count before going public.
+- **Multiplayer games all record as Marathon** (`time-attack-60`); the client
+  doesn't pick a mode for multiplayer yet, and there's no round timer server-side.
+- **Lobby GSI uses a single "lobby" partition**: fine at prototype scale.
+- Leaderboard GSI reads are eventually consistent, so a brand new score can
+  take a second to appear.
 
 ---
 

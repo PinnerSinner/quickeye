@@ -73,12 +73,8 @@ for a prime power n, you get n+1 symbols per card and n²+n+1 total cards, using
 - Prototype-first: get something playable and ugly before making it pretty.
 
 
-## Near-term task: real CI (not yet set up)
-
-
-No automated pipeline exists yet — commits currently land in GitHub with nothing
-running against them.
-Next step when convenient: add a GitHub Actions workflow (.github/workflows/ci.yml)
-that runs npm test on every push/PR, so broken code is caught automatically.
-Actual CD (auto-deploy via Amplify) comes later, once there's a frontend worth
-deploying — don't set this up prematurely.
+## CI
+.github/workflows/ci.yml runs on pushes and PRs to main: npm ci, build /shared,
+typecheck server/client/infra, npm test. Keep it green.
+Actual CD (auto-deploy via Amplify) comes later. The backend is still deployed by
+hand with `cdk deploy` from /infra; check `cdk diff` first.
