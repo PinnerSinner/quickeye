@@ -13,6 +13,9 @@ export const PALETTE = {
   yellow: "#FFD700",
   lime: "#00FF66",
   violet: "#8B5CF6",
+  // Extra two colours only used by the 57-symbol multiplayer deck (below).
+  pink: "#FF4FD8",
+  cyan: "#00D5FF",
 } as const;
 
 /** clip-path polygons for the non-primitive shapes. */
@@ -180,9 +183,30 @@ export function textOn(hex: string): string {
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? "#121212" : "#fff";
 }
 
+/**
+ * Glyphs for the real multiplayer deck. The server's deck (projective plane,
+ * n=7) has 57 distinct symbols, but GLYPHS above only has 35, so multiplayer
+ * cards need their own set: 9 shapes x 7 colours = 63, first 57 used.
+ * Index = the server's symbolId, so every symbol looks unique on screen.
+ */
+const DECK_SHAPES = ["circle", "square", "triangle", "diamond", "star", "plus", "hexagon", "ring", "half"];
+const DECK_COLORS: GlyphColor[] = ["red", "blue", "yellow", "lime", "violet", "pink", "cyan"];
+export const DECK_SYMBOL_COUNT = 57;
+export const DECK_GLYPHS: Glyph[] = DECK_COLORS.flatMap((c) =>
+  DECK_SHAPES.map((t) => ({ t, c }))
+).slice(0, DECK_SYMBOL_COUNT);
+
+/** Inline style for a glyph from the multiplayer deck, by server symbolId. */
+export function deckGlyphStyle(symbolId: number, s: number): CSSProperties {
+  return glyphStyleFor(DECK_GLYPHS[symbolId % DECK_GLYPHS.length], s);
+}
+
 /** Inline style for a rendered glyph tile of pixel size `s`. */
 export function glyphStyle(id: number, s: number): CSSProperties {
-  const d = GLYPHS[id % GLYPHS.length];
+  return glyphStyleFor(GLYPHS[id % GLYPHS.length], s);
+}
+
+function glyphStyleFor(d: Glyph, s: number): CSSProperties {
   const c = PALETTE[d.c];
   const S = Math.round(s * 0.62);
   if (d.t === "circle") return { width: S, height: S, borderRadius: "50%", background: c };

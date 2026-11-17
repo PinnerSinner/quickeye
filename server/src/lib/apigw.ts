@@ -18,6 +18,10 @@ export function endpointFromEvent(requestContext: {
   domainName?: string;
   stage?: string;
 }): string {
+  // Only the local dev server (server/local/devServer.ts) sets this, to point
+  // replies at its stand-in for the management API. Never set in AWS.
+  const localOverride = process.env.QUICKEYE_LOCAL_MGMT_ENDPOINT;
+  if (localOverride) return localOverride;
   return `https://${requestContext.domainName}/${requestContext.stage}`;
 }
 

@@ -7,7 +7,8 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test-client": "ts-node test-client.ts"
+    "test-client": "ts-node test-client.ts",
+    "dev:local": "esbuild local/devServer.ts --bundle --platform=node --target=node20 --log-level=warning --outfile=local/.build/devServer.js --external:dynalite --external:ws --external:@aws-sdk/* && node local/.build/devServer.js"
   },
   "dependencies": {
     "@aws-sdk/client-apigatewaymanagementapi": "^3.540.0",
@@ -18,6 +19,8 @@
   "devDependencies": {
     "@types/aws-lambda": "^8.10.130",
     "@types/ws": "^8.5.10",
+    "dynalite": "^3.2.2",
+    "esbuild": "^0.20.2",
     "ts-node": "^10.9.2",
     "ws": "^8.16.0"
   }

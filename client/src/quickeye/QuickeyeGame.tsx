@@ -42,6 +42,8 @@ import {
 import { drawShape, styleHeaderShape } from "./canvas";
 import { QuickeyeAudio } from "./audio";
 import { containsProfanity } from "@quickeye/shared";
+import { MultiplayerBoard, type MatchFeedback } from "./MultiplayerBoard";
+import type { ConnectionStatus } from "../hooks/useWebSocket";
 import "./quickeye.css";
 
 type View =
@@ -50,6 +52,9 @@ type View =
   | "multi"
   | "create"
   | "join"
+  | "browse"
+  | "lobby"
+  | "mplay"
   | "leaderboard"
   | "playing"
   | "over";
@@ -112,6 +117,14 @@ interface QState {
 }
 
 export interface QuickeyeGameProps {
+  /** Live WebSocket status; multiplayer menus are disabled unless "connected". */
+  connectionStatus?: ConnectionStatus;
+  /** Our own playerId in the current server game (from the "joined" message). */
+  myPlayerId?: string | null;
+  /** Called when the player backs out of a multiplayer lobby or game. */
+  onLeaveMultiplayer?: () => void;
+  /** Server verdict on the last submitted match (multiplayer board feedback). */
+  matchFeedback?: MatchFeedback | null;
   /** Called when the player creates a multiplayer room. */
   onCreateMultiplayer?: (playerName: string) => void;
   /** Called when the player joins a room by code. */
@@ -709,12 +722,26 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
   const goMulti = () => {
     navigate("multi");
   };
+  const mpReady = props.connectionStatus === "connected";
   const goCreate = () => {
-    navigate("create", { copyOk: false });
     props.onCreateMultiplayer?.(stateRef.current.playerName || "You");
+    if (!mpReady) return;
+    navigate("create", { copyOk: false });
   };
   const goJoin = () => {
+    if (!mpReady) return;
     navigate("join");
+  };
+  const goBrowse = () => {
+    if (!mpReady) return;
+    props.onQueryGames?.();
+    navigate("browse");
+  };
+  /** Back out of a lobby/game: tell App (which tidies up server-side) and go to the menu. */
+  const leaveMulti = (to: View = "multi", extra?: Partial<QState>) => {
+    props.onLeaveMultiplayer?.();
+    patch({ isMultiplayer: false, gameId: null, playerId: null });
+    navigate(to, extra);
   };
   const goLobby = () => {
     navigate("lobby");
@@ -1247,11 +1274,12 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
       patch((s) => ({
         isMultiplayer: true,
         gameId: gs.gameId,
-        playerId: gs.playerId,
-        view: s.view === "join" ? "lobby" : s.view,
+        playerId: props.myPlayerId ?? null,
+        view: s.view === "join" || s.view === "browse" ? "lobby" : s.view,
       }));
     }
-    if (props.matchResult) {
+    // The multiplayer board handles its own match feedback.
+    if (props.matchResult && stateRef.current.view !== "mplay") {
       if (props.matchResult.correct) {
         audioRef.current?.chunk((stateRef.current.scores.you || 0) + 1);
         patch((s) => ({ scores: { ...s.scores, you: s.scores.you + 1 }, locked: false }));
@@ -1267,6 +1295,26 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.gameState, props.matchResult, props.error]);
+
+  // When the host starts the game, everyone in a lobby screen jumps to the
+  // live board. Re-checked when a screen transition finishes, because
+  // navigate() ignores calls made mid-transition.
+  useEffect(() => {
+    const status = props.gameState?.status;
+    const inLobby = st.view === "create" || st.view === "lobby" || st.view === "join" || st.view === "browse";
+    if (inLobby && (status === "playing" || status === "finished") && st.transState === "idle") {
+      navigate("mplay");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.gameState?.status, st.view, st.transState]);
+
+  // While the lobby browser is open, refresh the list every few seconds.
+  useEffect(() => {
+    if (st.view !== "browse" || !mpReady) return;
+    const t = window.setInterval(() => props.onQueryGames?.(), 4000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [st.view, mpReady]);
 
   // Query leaderboard when tab changes
   useEffect(() => {
@@ -1539,7 +1587,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
     const best = bestFor(tab);
     const serverEntries = props.leaderboards?.[tab] || LB[tab] || [];
     const rows = [
-      ...serverEntries.map((r: any) => ({ name: r.name || r.n, v: r.score as number | null, you: false })),
+      ...serverEntries.map((r: any) => ({ name: r.playerName || r.name || r.n, v: (r.score ?? r.v) as number | null, you: false })),
       { name: st.playerName || "You", v: best == null ? (race ? null : 0) : best, you: true },
     ];
     rows.sort((a, b) => {
@@ -2432,7 +2480,22 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
         {st.view === "multi" && (
           <div style={{ ...panelStyle(640), ...getPanelAnimation(st.transState) }}>
             {smallHeader("Multiplayer", goHome)}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14 }}>
+            {!mpReady && (
+              <div style={noticeStyle} data-testid="mp-offline-notice">
+                {props.connectionStatus === "offline"
+                  ? "Multiplayer is off in this build (no game server configured). Solo play and bots work as normal."
+                  : "Connecting to the game server… multiplayer unlocks as soon as it's online."}
+              </div>
+            )}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3,1fr)",
+                gap: 14,
+                opacity: mpReady ? 1 : 0.4,
+                pointerEvents: mpReady ? "auto" : "none",
+              }}
+            >
               <button className="qhov" onClick={goCreate} style={multiCard("#1040C0", "#fff")}>
                 <span style={{ width: 30, height: 30, background: "#fff" }} />
                 <span style={multiLabel}>
@@ -2455,6 +2518,14 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                   Join
                   <br />
                   with Code
+                </span>
+              </button>
+              <button className="qhov" onClick={goBrowse} style={multiCard("#D02020", "#fff")}>
+                <span style={{ width: 30, height: 30, borderRadius: "50%", background: "#fff" }} />
+                <span style={multiLabel}>
+                  Browse
+                  <br />
+                  Games
                 </span>
               </button>
             </div>
@@ -2494,7 +2565,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
         {/* ===== CREATE ===== */}
         {st.view === "create" && (
           <div style={{ ...panelStyle(520), ...getPanelAnimation(st.transState) }}>
-            {smallHeader("Create Game", goMulti)}
+            {smallHeader("Create Game", () => leaveMulti())}
             <div style={labelStyle}>Your room code</div>
             <div style={{ display: "flex", gap: 12, alignItems: "stretch", marginBottom: 20, marginTop: 10 }}>
               <div
@@ -2507,7 +2578,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                   textAlign: "center",
                 }}
               >
-                <span style={{ font: "900 3rem/1 'Outfit',sans-serif", color: "#121212", letterSpacing: "10px" }}>
+                <span data-testid="room-code" style={{ font: "900 3rem/1 'Outfit',sans-serif", color: "#121212", letterSpacing: "10px" }}>
                   {props.gameState?.gameId || "..."}
                 </span>
               </div>
@@ -2531,10 +2602,21 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
                 {st.copyOk ? "✓ Copied" : "Copy"}
               </button>
             </div>
-            <div style={{ font: "500 13px/1.5 'Outfit',sans-serif", color: "#bbb", marginBottom: 20 }}>
-              Share the code so friends can join. Start whenever you're ready.
+            <div style={labelStyle}>Players ({props.gameState?.players?.length ?? 0})</div>
+            <div style={{ font: "700 15px/1.8 'Outfit',sans-serif", color: "#F0F0F0", marginBottom: 14 }} data-testid="create-players">
+              {props.gameState?.players?.map((p: any) => p.name).join(", ") || "…"}
             </div>
-            <button className="qhov" onClick={startFromMulti} style={primaryWide}>
+            <div style={{ font: "500 13px/1.5 'Outfit',sans-serif", color: "#bbb", marginBottom: 20 }}>
+              {(props.gameState?.players?.length ?? 0) < 2
+                ? "Share the code (or have friends hit Browse Games). You need at least one other player to start."
+                : "Everyone's in? Start whenever you're ready."}
+            </div>
+            <button
+              className="qhov"
+              onClick={startFromMulti}
+              disabled={(props.gameState?.players?.length ?? 0) < 2}
+              style={{ ...primaryWide, opacity: (props.gameState?.players?.length ?? 0) < 2 ? 0.45 : 1 }}
+            >
               Start Game
             </button>
           </div>
@@ -2543,7 +2625,7 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
         {/* ===== LOBBY ===== */}
         {st.view === "lobby" && (
           <div style={{ ...panelStyle(520), ...getPanelAnimation(st.transState) }}>
-            {smallHeader("Waiting Room", goMulti)}
+            {smallHeader("Waiting Room", () => leaveMulti())}
             <div style={{ textAlign: "center", marginBottom: 20 }}>
               <div style={{ font: "500 13px 'Outfit',sans-serif", color: "#999", marginBottom: 10 }}>
                 GAME CODE
@@ -2554,16 +2636,16 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               <div style={{ font: "500 13px 'Outfit',sans-serif", color: "#999", marginBottom: 10 }}>
                 PLAYERS
               </div>
-              <div style={{ font: "500 13px/1.8 'Outfit',sans-serif", color: "#bbb", marginBottom: 20 }}>
+              <div style={{ font: "500 13px/1.8 'Outfit',sans-serif", color: "#bbb", marginBottom: 20 }} data-testid="lobby-players">
                 {props.gameState?.players?.map((p: any) => p.name).join(", ") || "Waiting for players..."}
               </div>
-              {st.playerId !== props.gameState?.hostId && (
+              {props.myPlayerId !== props.gameState?.hostId && (
                 <div style={{ font: "500 13px/1.5 'Outfit',sans-serif", color: "#bbb" }}>
                   Waiting for host to start...
                 </div>
               )}
             </div>
-            {st.playerId === props.gameState?.hostId && (
+            {props.myPlayerId === props.gameState?.hostId && (
               <button
                 className="qhov"
                 onClick={() => {
@@ -2577,11 +2659,79 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
             )}
             <button
               className="qhov"
-              onClick={goMulti}
-              style={{...primaryWide, background: "#666", marginTop: st.playerId === props.gameState?.hostId ? 10 : 0}}
+              onClick={() => leaveMulti()}
+              style={{...primaryWide, background: "#666", marginTop: props.myPlayerId === props.gameState?.hostId ? 10 : 0}}
             >
               Back to Menu
             </button>
+          </div>
+        )}
+
+        {/* ===== BROWSE (lobby browser) ===== */}
+        {st.view === "browse" && (
+          <div style={{ ...panelStyle(560), ...getPanelAnimation(st.transState) }}>
+            {smallHeader("Open Games", goMulti)}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }} data-testid="browse-list">
+              {(props.availableGames ?? []).length === 0 ? (
+                <div style={{ font: "500 14px/1.5 'Outfit',sans-serif", color: "#bbb" }}>
+                  No open games right now. Create one and it'll show up here for everyone else.
+                </div>
+              ) : (
+                (props.availableGames ?? []).map((g) => (
+                  <div key={g.gameId} style={browseRow} data-testid={`browse-game-${g.gameId}`}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ font: "900 22px 'Outfit',sans-serif", letterSpacing: "4px", color: "#121212" }}>{g.gameId}</div>
+                      <div style={{ font: "600 12px 'Outfit',sans-serif", color: "#555", textTransform: "uppercase" }}>
+                        Host {g.host} · {g.playerCount} player{g.playerCount === 1 ? "" : "s"}
+                      </div>
+                    </div>
+                    <button
+                      className="qhov"
+                      style={{ ...primaryWide, width: "auto", padding: "0.7rem 1.2rem" }}
+                      onClick={() => {
+                        audioRef.current?.menuClick();
+                        props.onJoinMultiplayer?.(g.gameId, stateRef.current.playerName || "You");
+                      }}
+                    >
+                      Join
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+            <button
+              className="qhov"
+              onClick={() => {
+                audioRef.current?.menuClick();
+                props.onQueryGames?.();
+              }}
+              style={{ ...primaryWide, background: "#666" }}
+            >
+              Refresh
+            </button>
+          </div>
+        )}
+
+        {/* ===== LIVE MULTIPLAYER BOARD ===== */}
+        {st.view === "mplay" && props.gameState && (
+          <div style={getPanelAnimation(st.transState)}>
+            <MultiplayerBoard
+              state={props.gameState}
+              myPlayerId={props.myPlayerId ?? null}
+              feedback={props.matchFeedback ?? null}
+              playerColor={pc}
+              onPick={(symbolId) => props.onSubmitMatch?.(props.gameState.gameId, symbolId)}
+              onLeave={() => leaveMulti()}
+              onLeaderboard={() => leaveMulti("leaderboard", { leaderTab: "marathon" })}
+            />
+          </div>
+        )}
+        {st.view === "mplay" && !props.gameState && (
+          <div style={{ ...panelStyle(520), ...getPanelAnimation(st.transState) }}>
+            {smallHeader("Game ended", goMulti)}
+            <div style={{ font: "500 14px/1.5 'Outfit',sans-serif", color: "#bbb" }}>
+              You're no longer in that game. Head back to the multiplayer menu to start another.
+            </div>
           </div>
         )}
 
@@ -2594,8 +2744,9 @@ export function QuickeyeGame(props: QuickeyeGameProps) {
               className="qe-input"
               value={st.joinCode}
               onChange={onCode}
-              inputMode="numeric"
-              placeholder="0000"
+              inputMode="text"
+              autoCapitalize="characters"
+              placeholder="ABCD"
               maxLength={4}
               style={{
                 width: "100%",
@@ -3149,6 +3300,23 @@ function panelStyle(width: number, overflowHidden = false): CSSProperties {
     boxSizing: "border-box",
   };
 }
+const noticeStyle: CSSProperties = {
+  font: "600 13px/1.5 'Outfit',sans-serif",
+  color: "#121212",
+  background: "#F0C020",
+  border: "3px solid #000",
+  padding: "10px 14px",
+  marginBottom: 16,
+};
+const browseRow: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  padding: "12px 15px",
+  background: "#F0F0F0",
+  border: "4px solid #000",
+  boxShadow: "4px 4px 0 0 #000",
+};
 const labelStyle: CSSProperties = {
   font: "700 11px 'Outfit',sans-serif",
   color: "#888",

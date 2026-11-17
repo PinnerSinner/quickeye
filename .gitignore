@@ -10,3 +10,6 @@ build/
 infra/cdk.out/
 cdk.out/
 *.js.map
+
+# Local dev backend bundle
+server/local/.build/

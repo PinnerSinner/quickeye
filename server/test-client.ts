@@ -1,207 +1,221 @@
 #!/usr/bin/env npx ts-node
 /**
- * Local test client for the Quickeye WebSocket API.
+ * Smoke test for the Quickeye WebSocket API (live AWS or the local dev server).
  *
- * Simulates a full game flow:
- *  1. Player A creates a game
- *  2. Player B joins
- *  3. A starts the game
- *  4. A and B exchange matches
+ * Two fake players, Alice and Bob, run through the real game flow:
+ *   1. both connect
+ *   2. Alice creates a game; Bob sees it in the lobby browser (queryGames)
+ *   3. Bob joins, Alice starts
+ *   4. Bob submits a symbol that isn't on his card -> server must reject it
+ *   5. Alice submits the real match (worked out from the shared deck) -> accepted
+ *   6. cleanupGames sent as a WebSocket action -> must NOT be a route
+ *   7. with --full: they play to game over, then the leaderboard is checked
  *
  * Usage:
- *   npx ts-node server/test-client.ts wss://your-api-gateway-url/prod
+ *   npm -w server run test-client wss://xxxx.execute-api.us-east-1.amazonaws.com/prod
+ *   npm -w server run test-client ws://localhost:3001 --full
  *
- * You get the wss:// URL from `cdk deploy` output.
+ * --full writes Alice's and Bob's scores to the leaderboard, so on the live
+ * stack those names will show up on the real board. Leave it off there unless
+ * you want that.
  */
 
 import WebSocket from "ws";
-import type {
-  ClientMessage,
-  ServerMessage,
-  JoinedMessage,
-  StateUpdateMessage,
-  MatchResultMessage,
-} from "@quickeye/shared";
+import type { ClientMessage, ServerMessage, GameState } from "@quickeye/shared";
+// Imported from source (not the package) so ts-node can run it directly.
+import { generateDeck } from "../shared/src/deckGeneration";
+import { GAME_CONFIG } from "../shared/src/gameTypes";
 
-interface Player {
-  name: string;
-  ws: WebSocket | null;
-  gameId?: string;
-  playerId?: string;
-  currentCardId?: number | null;
-}
+const DECK = generateDeck(GAME_CONFIG.deckN);
+const TIMEOUT_MS = 15000;
 
-const log = (player: string, msg: string) =>
-  console.log(`[${player}] ${msg}`);
+class Bot {
+  ws!: WebSocket;
+  playerId = "";
+  gameId = "";
+  state: GameState | null = null;
+  private waiters: { pred: (m: ServerMessage) => boolean; resolve: (m: ServerMessage) => void }[] = [];
 
-function connect(url: string, player: string): Promise<WebSocket> {
-  return new Promise((resolve, reject) => {
-    const ws = new WebSocket(url);
-    ws.on("open", () => {
-      log(player, "connected");
-      resolve(ws);
+  constructor(public name: string) {}
+
+  log(msg: string) {
+    console.log(`[${this.name}] ${msg}`);
+  }
+
+  connect(url: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.ws = new WebSocket(url);
+      this.ws.on("open", () => {
+        this.log("connected");
+        resolve();
+      });
+      this.ws.on("error", reject);
+      this.ws.on("message", (data) => {
+        const msg = JSON.parse(data.toString()) as ServerMessage;
+        if (msg.type === "stateUpdate" || msg.type === "joined") this.state = msg.state;
+        if (msg.type === "joined") {
+          this.playerId = msg.playerId;
+          this.gameId = msg.gameId;
+        }
+        this.waiters = this.waiters.filter((w) => {
+          if (!w.pred(msg)) return true;
+          w.resolve(msg);
+          return false;
+        });
+      });
     });
-    ws.on("error", reject);
-  });
+  }
+
+  /** Send, then wait for the first message matching `pred`. */
+  request<T extends ServerMessage>(msg: ClientMessage | Record<string, unknown>, pred: (m: ServerMessage) => boolean, what: string): Promise<T> {
+    const p = this.waitFor<T>(pred, what);
+    this.ws.send(JSON.stringify(msg));
+    return p;
+  }
+
+  waitFor<T extends ServerMessage>(pred: (m: ServerMessage) => boolean, what: string): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error(`${this.name}: timed out waiting for ${what}`)), TIMEOUT_MS);
+      this.waiters.push({
+        pred,
+        resolve: (m) => {
+          clearTimeout(timer);
+          resolve(m as T);
+        },
+      });
+    });
+  }
+
+  me() {
+    return this.state?.players.find((p) => p.playerId === this.playerId);
+  }
+
+  /** The one symbol shared by my card and the center card. */
+  realMatch(): number {
+    const mine = DECK.cards[this.me()!.currentCardId!].symbolIds;
+    const center = DECK.cards[this.state!.centerCardId!].symbolIds;
+    return mine.find((s) => center.includes(s))!;
+  }
+
+  /** A symbol that is definitely NOT on my card. */
+  wrongSymbol(): number {
+    const mine = DECK.cards[this.me()!.currentCardId!].symbolIds;
+    return DECK.cards.flatMap((c) => c.symbolIds).find((s) => !mine.includes(s))!;
+  }
 }
 
-function send(ws: WebSocket, msg: ClientMessage): void {
-  ws.send(JSON.stringify(msg));
-}
-
-function onMessage(
-  ws: WebSocket,
-  handler: (msg: ServerMessage) => void
-): void {
-  ws.on("message", (data: string) => {
-    try {
-      handler(JSON.parse(data));
-    } catch (err) {
-      console.error("Failed to parse message:", data, err);
-    }
-  });
+function check(cond: unknown, msg: string) {
+  if (!cond) throw new Error(`CHECK FAILED: ${msg}`);
+  console.log(`  ✓ ${msg}`);
 }
 
 async function main() {
-  let url = process.argv[2] || process.argv[3] || process.env.WSS_URL;
+  const args = process.argv.slice(2);
+  const full = args.includes("--full");
+  const url = (args.find((a) => !a.startsWith("--")) || process.env.WSS_URL || "").trim();
   if (!url) {
-    console.error(
-      "Usage: npx ts-node server/test-client.ts wss://your-api-gateway-url/prod"
+    console.error("Usage: npm -w server run test-client <wss-url> [--full]");
+    process.exit(1);
+  }
+
+  const alice = new Bot("Alice");
+  const bob = new Bot("Bob");
+
+  console.log(`[SETUP] ${url}${full ? " (full game)" : ""}`);
+  await alice.connect(url);
+  await bob.connect(url);
+
+  console.log("[TEST] Alice creates a game");
+  await alice.request({ action: "createGame", playerName: "Alice", gameType: "multiplayer" }, (m) => m.type === "joined", "joined");
+  alice.log(`created ${alice.gameId}`);
+
+  console.log("[TEST] Bob looks in the lobby browser");
+  const list = await bob.request<Extract<ServerMessage, { type: "gamesList" }>>(
+    { action: "queryGames" },
+    (m) => m.type === "gamesList",
+    "gamesList"
+  );
+  check(list.games.some((g) => g.gameId === alice.gameId && g.host === "Alice"), `lobby lists ${alice.gameId} hosted by Alice`);
+
+  console.log("[TEST] Bob joins");
+  await bob.request({ action: "joinGame", gameId: alice.gameId, playerName: "Bob" }, (m) => m.type === "joined", "joined");
+  check(bob.gameId === alice.gameId, `Bob is in ${bob.gameId}`);
+
+  console.log("[TEST] Alice starts");
+  const started = (m: ServerMessage) => m.type === "stateUpdate" && m.state.status === "playing";
+  const bobSeesStart = bob.waitFor(started, "Bob sees playing state");
+  await alice.request({ action: "startGame", gameId: alice.gameId }, started, "playing state");
+  await bobSeesStart;
+  check(alice.me()?.currentCardId != null && bob.me()?.currentCardId != null, "both players were dealt a card");
+
+  console.log("[TEST] Bob tries a symbol that isn't on his card");
+  const wrong = await bob.request<Extract<ServerMessage, { type: "matchResult" }>>(
+    { action: "submitMatch", gameId: bob.gameId, symbolId: bob.wrongSymbol() },
+    (m) => m.type === "matchResult",
+    "matchResult"
+  );
+  check(wrong.correct === false, "server rejected the bogus match");
+
+  console.log("[TEST] Alice submits the real match");
+  const before = alice.me()!.score;
+  const right = await alice.request<Extract<ServerMessage, { type: "matchResult" }>>(
+    { action: "submitMatch", gameId: alice.gameId, symbolId: alice.realMatch() },
+    (m) => m.type === "matchResult",
+    "matchResult"
+  );
+  check(right.correct === true, `server accepted symbol ${right.symbolId}`);
+  await alice.waitFor((m) => m.type === "stateUpdate" && m.state.players.some((p) => p.playerId === alice.playerId && p.score === before + 1), "score update").catch(() => undefined);
+  check(alice.me()!.score === before + 1, `Alice's score is now ${alice.me()!.score}`);
+
+  console.log("[TEST] cleanupGames is not reachable over the socket");
+  const notRoute = await alice.request<Extract<ServerMessage, { type: "error" }>>(
+    { action: "cleanupGames" },
+    (m) => m.type === "error",
+    "error"
+  );
+  check(notRoute.code === "UNKNOWN_ACTION", "cleanupGames hits $default (UNKNOWN_ACTION)");
+
+  if (full) {
+    console.log("[TEST] Playing to game over");
+    let turn = 0;
+    while (alice.state!.status === "playing") {
+      const p = turn++ % 3 === 2 ? bob : alice; // Alice wins ~2 rounds in 3
+      if (p.me()!.currentCardId === null) continue;
+      const centerBefore = p.state!.centerCardId;
+      await p.request({ action: "submitMatch", gameId: p.gameId, symbolId: p.realMatch() }, (m) => m.type === "matchResult", "matchResult");
+      for (const b of [alice, bob]) {
+        if (b.state!.centerCardId === centerBefore && b.state!.status === "playing") {
+          await b.waitFor((m) => m.type === "stateUpdate" && m.state.centerCardId !== centerBefore, "next round");
+        }
+      }
+    }
+    const final = alice.state!;
+    const a = final.players.find((x) => x.name === "Alice")!;
+    const b = final.players.find((x) => x.name === "Bob")!;
+    check(final.status === "finished", `game finished: Alice ${a.score}, Bob ${b.score}`);
+
+    console.log("[TEST] Leaderboard (all-time, time-attack-60)");
+    // GSI reads are eventually consistent; give it a moment.
+    await new Promise((r) => setTimeout(r, 1500));
+    const lb = await alice.request<Extract<ServerMessage, { type: "leaderboard" }>>(
+      { action: "queryLeaderboard", gameMode: "time-attack-60", period: "all-time", limit: 100 },
+      (m) => m.type === "leaderboard",
+      "leaderboard"
     );
-    process.exit(1);
+    const mine = (id: string) => lb.entries.find((e) => e.playerId === id);
+    check(mine(a.playerId)?.score === a.score, "Alice's final score is on the board");
+    check(mine(b.playerId)?.score === b.score, "Bob's final score is on the board too (no overwrite)");
+    const scores = lb.entries.map((e) => e.score);
+    check(scores.every((s, i) => i === 0 || scores[i - 1] >= s), "board is sorted highest first");
   }
-  url = url.trim();
 
-  const playerA: Player = { name: "Alice", ws: null };
-  const playerB: Player = { name: "Bob", ws: null };
-
-  try {
-    // Connect both players
-    log("SETUP", "connecting players...");
-    playerA.ws = await connect(url, playerA.name);
-    playerB.ws = await connect(url, playerB.name);
-
-    // --- Player A creates a game ---
-    log("TEST", "Player A creates a game");
-    await new Promise<void>((resolve) => {
-      onMessage(playerA.ws!, (msg: ServerMessage) => {
-        if (msg.type === "joined") {
-          const m = msg as JoinedMessage;
-          playerA.gameId = m.gameId;
-          playerA.playerId = m.playerId;
-          log(playerA.name, `created game ${m.gameId}, playerId=${m.playerId}`);
-          resolve();
-        } else if (msg.type === "error") {
-          log(playerA.name, `error: ${msg.message}`);
-        }
-      });
-      send(playerA.ws!, { action: "createGame", playerName: "Alice" });
-    });
-
-    if (!playerA.gameId) throw new Error("A failed to create game");
-
-    // --- Player B joins ---
-    log("TEST", `Player B joins game ${playerA.gameId}`);
-    await new Promise<void>((resolve) => {
-      onMessage(playerB.ws!, (msg: ServerMessage) => {
-        if (msg.type === "joined") {
-          const m = msg as JoinedMessage;
-          playerB.gameId = m.gameId;
-          playerB.playerId = m.playerId;
-          log(playerB.name, `joined game ${m.gameId}, playerId=${m.playerId}`);
-          resolve();
-        } else if (msg.type === "stateUpdate") {
-          // B also gets the initial state before the joined message
-          log(playerB.name, `state: ${msg.state.players.length} players`);
-        }
-      });
-      send(playerB.ws!, {
-        action: "joinGame",
-        gameId: playerA.gameId!,
-        playerName: "Bob",
-      });
-    });
-
-    if (!playerB.gameId) throw new Error("B failed to join game");
-
-    // --- Player A starts the game ---
-    log("TEST", "Player A starts the game");
-    await new Promise<void>((resolve) => {
-      let updates = 0;
-      onMessage(playerA.ws!, (msg: ServerMessage) => {
-        if (msg.type === "stateUpdate") {
-          const m = msg as StateUpdateMessage;
-          updates++;
-          if (updates === 2) {
-            // We get two updates: one for B joining, one for game start
-            playerA.currentCardId = m.state.players.find(
-              (p) => p.playerId === playerA.playerId
-            )?.currentCardId;
-            log(
-              playerA.name,
-              `game started, dealing done. Your card: ${playerA.currentCardId}, center: ${m.state.centerCardId}`
-            );
-            resolve();
-          }
-        }
-      });
-      send(playerA.ws!, {
-        action: "startGame",
-        gameId: playerA.gameId!,
-      });
-    });
-
-    // B should also get the playing state
-    await new Promise<void>((resolve) => {
-      onMessage(playerB.ws!, (msg: ServerMessage) => {
-        if (msg.type === "stateUpdate") {
-          const m = msg as StateUpdateMessage;
-          if (m.state.status === "playing") {
-            playerB.currentCardId = m.state.players.find(
-              (p) => p.playerId === playerB.playerId
-            )?.currentCardId;
-            log(
-              playerB.name,
-              `game started. Your card: ${playerB.currentCardId}, center: ${m.state.centerCardId}`
-            );
-            resolve();
-          }
-        }
-      });
-    });
-
-    // --- Player A submits a match ---
-    log("TEST", "Player A submits a match attempt");
-    await new Promise<void>((resolve) => {
-      onMessage(playerA.ws!, (msg: ServerMessage) => {
-        if (msg.type === "matchResult") {
-          const m = msg as MatchResultMessage;
-          if (m.correct) {
-            log(
-              playerA.name,
-              `CORRECT! symbolId=${m.symbolId}, score now 1. Game over: ${m.gameOver}`
-            );
-          } else {
-            log(playerA.name, "incorrect guess");
-          }
-          resolve();
-        }
-      });
-      // Submit the first symbol on A's card (we don't validate it's actually
-      // the match — the server does that authoritatively)
-      send(playerA.ws!, {
-        action: "submitMatch",
-        gameId: playerA.gameId!,
-        symbolId: 0, // Just try the first symbol; server validates
-      });
-    });
-
-    log("SUCCESS", "test flow completed without errors");
-    process.exit(0);
-  } catch (err) {
-    log("ERROR", String(err));
-    process.exit(1);
-  }
+  console.log("[SUCCESS] all checks passed");
+  alice.ws.close();
+  bob.ws.close();
+  process.exit(0);
 }
 
-main();
+main().catch((err) => {
+  console.error(`[ERROR] ${err instanceof Error ? err.message : err}`);
+  process.exit(1);
+});
